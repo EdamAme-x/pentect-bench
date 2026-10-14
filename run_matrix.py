@@ -12,6 +12,7 @@ import sys
 
 from benchmark_live_defense import SCENARIOS as BENCHMARK_SCENARIOS, sha256_file
 from pii_fixtures import PII_SCENARIOS
+from adversarial_fixtures import NON_SENSITIVE_SCENARIOS
 
 
 MODEL_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/:-]*$")
@@ -63,7 +64,7 @@ def aggregate(reports: list[dict[str, object]]) -> list[dict[str, object]]:
                 pii_watched_fields += protected.get("watched_fields", 0)
                 pii_direct_fields += direct.get("exposed_fields", 0)
                 pii_pentect_fields += protected.get("exposed_fields", 0)
-            if scenario == "control":
+            if scenario in NON_SENSITIVE_SCENARIOS:
                 continue
             sensitive_runs += protected.get("runs", 0)
             direct_exposed += direct.get("runs_exposed", 0)

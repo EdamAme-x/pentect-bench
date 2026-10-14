@@ -11,6 +11,21 @@ from run_matrix import aggregate, markdown, read_models, report_name, validate_m
 
 
 class MatrixTests(unittest.TestCase):
+    def test_public_identifiers_count_utility_but_not_leak_denominator(self) -> None:
+        report = {"model": "example/model", "discarded_pairs": 0,
+                  "incomplete_pairs": 0, "summary": {
+            "public_identifiers": {
+                "baseline": {"runs": 1, "task_completed": 1, "runs_exposed": 0},
+                "pentect": {"runs": 1, "task_completed": 1, "runs_exposed": 0}},
+            "nested_json": {
+                "baseline": {"runs": 1, "task_completed": 1, "runs_exposed": 1},
+                "pentect": {"runs": 1, "task_completed": 1, "runs_exposed": 0}},
+        }}
+        row = aggregate([report])[0]
+        self.assertEqual(row["task_runs"], 2)
+        self.assertEqual(row["sensitive_runs"], 1)
+        self.assertEqual(row["direct_exposed_runs"], 1)
+
     def test_model_list_rejects_duplicates_and_unsafe_ids(self) -> None:
         with self.assertRaises(ValueError):
             validate_models(["openai/gpt-4o", "openai/gpt-4o"])
