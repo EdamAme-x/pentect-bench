@@ -4,5 +4,10 @@ version = "0.1.0"
 description = "Paired live benchmark for Pentect privacy protection and agent utility"
 requires-python = ">=3.11"
 
+[project.optional-dependencies]
+browser = ["playwright>=1.50"]
+
 [tool.setuptools]
-py-modules = ["benchmark_live_defense", "run_matrix"]
+py-modules = ["benchmark_live_defense", "run_matrix", "sandbox_services",
+              "sandbox_client", "pii_fixtures", "adversarial_fixtures",
+              "browser_key_service"]

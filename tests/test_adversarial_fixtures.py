@@ -42,6 +42,15 @@ class AdversarialFixtureTests(unittest.TestCase):
                 self.assertIn(fixture.watched["url_password"], fixture.contents)
                 self.assertEqual(unquote(fixture.watched["url_password"]),
                                  fixture.watched["password"])
+            elif scenario == "jwt_payload":
+                jwt = json.loads(fixture.contents)["jwt"]
+                self.assertEqual(jwt, fixture.watched["jwt"])
+                self.assertEqual(jwt.split(".")[1], fixture.watched["payload"])
+                payload = fixture.watched["payload"]
+                decoded = base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4))
+                self.assertEqual(json.loads(decoded)["secret"], secret)
+            elif scenario == "pem_block":
+                self.assertEqual(base64.b64decode(fixture.watched["pem_body"]).decode(), secret)
             else:
                 for label, value in fixture.watched.items():
                     with self.subTest(scenario=scenario, label=label):
