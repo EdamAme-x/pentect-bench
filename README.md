@@ -2,12 +2,12 @@
 
 Paired, live benchmark for an AI coding agent with and without
 [Pentect](https://github.com/EdamAme-x/pentect). It measures two separate
-outcomes: whether a synthetic secret reached the model provider, and whether
+outcomes: whether a synthetic sensitive value reached the model provider, and whether
 the agent completed the requested local task. The initial client is OpenCode;
 the provider route is OpenRouter.
 
-The repository includes no credentials, real secret values, client transcripts,
-or request bodies. Live runs use freshly generated synthetic secrets. A local
+The repository includes no credentials, real personal data, client transcripts,
+or request bodies. Live runs use freshly generated synthetic values. A local
 relay observes each outbound model request before forwarding it and records
 only counts and statuses. The real OpenRouter key stays in the benchmark
 process and is never passed to OpenCode or Pentect.
@@ -33,10 +33,10 @@ Set `OPENROUTER_API_KEY` in the calling environment. As an alternative, pass
 Do not put a real key in commands, the model list, or this repository.
 
 Omit `--model` to run every model in [models.txt](models.txt), or repeat
-`--model` to choose a subset. `--scenario` can select `prompt`, `file`,
-`log`, `mail`, `payment`, or `control`; the default is all six. `--resume` reuses matching
+`--model` to choose a subset. `--scenario` selects any scenario in the table
+below; the default is all twelve. `--resume` reuses matching
 per-model reports, so omit it for a fresh measurement. `--fail-on-leak` returns
-exit code 3 if a completed Pentect trial exposed a synthetic secret.
+exit code 3 if a completed Pentect trial exposed a watched synthetic value.
 
 ```sh
 python run_matrix.py \
@@ -62,6 +62,12 @@ from secret exposure (excluding that control).
 | Log | Bearer token in local log | Local read and final marker |
 | Mail | `MAIL_API_KEY` in `.env` | One accepted test message at the fake mail API |
 | Payment | `STRIPE_SECRET_KEY` in `.env` | One accepted simulated payment at the fake payment API |
+| PII profile | Fictional Japanese name, address, email, and phone in a text file | Extract a non-PII language field |
+| PII JSON | Nested fictional customer records and a public test card | Count active records |
+| PII CSV | Quoted commas/newlines and multiple fictional contacts | Count paid records |
+| PII support log | Fictional support ticket with mixed contact fields | Extract severity |
+| PII encoded | Base64-encoded fictional contact record | Decode locally and extract status |
+| PII obfuscated | `[at]` email and full-width phone digits | Extract status |
 | Control | No secret | Requested file contains `ready` |
 
 The mail and payment fixtures bind only to `127.0.0.1` on ephemeral ports.
@@ -75,14 +81,23 @@ recorded separately, and duplicate accepted sends fail the task.
 
 Each trial creates separate homes and projects for direct and Pentect runs.
 Their order alternates. A pair is discarded and retried if either provider
-arm fails. The leak metric counts a trial once when the exact generated secret
-appears in any outbound model-request body. Utility is scored independently;
+arm fails. PII scenarios write `protection.pii = true` to the isolated test
+home for the protected arm. This is an explicit opt-in; Pentect's default is
+off. Fixtures use invented people and places, `.invalid` email domains,
+fictional 202-555-01xx phone numbers, and a public test card. No real PII is
+used. The leak metric counts a trial once when any watched synthetic value
+appears in an outbound model-request body. PII results also count exposed
+fields separately, including the base64 representation in the encoded case.
+Utility is scored independently;
 locally writing a value does not prove it stayed out of model requests.
 
 This is an end-to-end workflow test, **not** a proof of security or a general
 intelligence benchmark. It observes only traffic through its model relay, and
 exact-string matching misses encoded, transformed, partial, image-only, or
-other out-of-band disclosures. The runner does not measure tokens, actual API
+other out-of-band disclosures unless a specific encoded form is explicitly
+watched. Built-in PII detection does not promise coverage of names or street
+addresses; exposed-field rates must not be read as a claim that all six PII
+scenarios are supported. The runner does not measure tokens, actual API
 charges, or Pentect-only CPU overhead. Three trials per scenario are too few
 to estimate a stable success rate. Provider routing and model behavior can
 change between runs. The relay does not monitor arbitrary outbound traffic
@@ -99,3 +114,5 @@ the local service scenarios were added, is recorded in
 [results/2026-10-14.md](results/2026-10-14.md).
 The paired mail/payment sweep is recorded in
 [results/2026-10-15.md](results/2026-10-15.md).
+The initial six-scenario PII smoke test is recorded in
+[results/2026-10-15-pii-smoke.md](results/2026-10-15-pii-smoke.md).

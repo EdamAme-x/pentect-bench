@@ -42,18 +42,28 @@ class MatrixTests(unittest.TestCase):
                                      "task_completed": 2}},
                 "log": {"baseline": {"runs": 3, "runs_exposed": 3},
                         "pentect": {"runs": 3, "runs_exposed": 0}},
+                "pii_profile": {"baseline": {"runs": 2, "runs_exposed": 2,
+                                               "task_completed": 2, "watched_fields": 8,
+                                               "exposed_fields": 7},
+                                "pentect": {"runs": 2, "runs_exposed": 1,
+                                            "task_completed": 1, "watched_fields": 8,
+                                            "exposed_fields": 2}},
             },
         }
         row = aggregate([report])[0]
-        self.assertEqual(row["sensitive_runs"], 11)
-        self.assertEqual(row["direct_exposed_runs"], 11)
-        self.assertEqual(row["pentect_exposed_runs"], 1)
-        self.assertEqual(row["task_runs"], 11)
-        self.assertEqual(row["direct_completed"], 6)
-        self.assertEqual(row["pentect_completed"], 4)
+        self.assertEqual(row["sensitive_runs"], 13)
+        self.assertEqual(row["direct_exposed_runs"], 13)
+        self.assertEqual(row["pentect_exposed_runs"], 2)
+        self.assertEqual(row["task_runs"], 13)
+        self.assertEqual(row["direct_completed"], 8)
+        self.assertEqual(row["pentect_completed"], 5)
+        self.assertEqual(row["pii_runs"], 2)
+        self.assertEqual(row["pii_watched_fields"], 8)
+        self.assertEqual(row["pii_direct_exposed_fields"], 7)
+        self.assertEqual(row["pii_pentect_exposed_fields"], 2)
         self.assertEqual(row["file_completed_pentect"], 2)
         self.assertEqual(row["mail_completed_pentect"], 2)
-        self.assertIn("1/11", markdown([row]))
+        self.assertIn("2/13", markdown([row]))
 
     def test_aggregate_rejects_unpaired_summary(self) -> None:
         report = {"model": "example/model", "discarded_pairs": 0,

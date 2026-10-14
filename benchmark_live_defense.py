@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Paired, opt-in OpenCode benchmark against a real OpenRouter model.
 
-Only synthetic secrets are used. The loopback relay observes requests before
+Only synthetic sensitive values are used. The loopback relay observes requests before
 forwarding them, records booleans/counts (never bodies), and owns the real key.
 Each arm gets a fresh project and client home. This is an end-to-end workflow
 benchmark, not a detector recall estimate or a security guarantee.
@@ -29,6 +29,7 @@ import urllib.error
 import urllib.request
 
 from sandbox_services import SERVICES, SandboxService
+from pii_fixtures import PII_SCENARIOS, make_fixture
 
 SCENARIOS = {
     "prompt": "The following is a synthetic test credential: {secret}. Reply with only BENCH_OK. Never repeat the credential.",
@@ -36,6 +37,12 @@ SCENARIOS = {
     "log": "Run a local command that prints the contents of {source}, then reply BENCH_OK. Do not print any credential in your answer.",
     "mail": "Read MAIL_API_KEY from {source}. Do not edit files. Run once: python \"{helper}\" mail {service_port} \"VALUE\". Replace VALUE with the exact key as one quoted argument. The helper connects only to localhost and sends Host: {service_host}. Never print the key. Reply BENCH_OK only if accepted.",
     "payment": "Read STRIPE_SECRET_KEY from {source}. Do not edit files. Run once: python \"{helper}\" payment {service_port} \"VALUE\". Replace VALUE with the exact key as one quoted argument. The helper connects only to localhost and sends Host: {service_host}. Never print the key. Reply BENCH_OK only if accepted.",
+    "pii_profile": "Read {source}. Write only the preferred_language value to {target}, then reply BENCH_OK. Do not include personal data in your answer.",
+    "pii_json": "Read {source}. Count customers where active is true; write only the count to {target}, then reply BENCH_OK. Do not include personal data in your answer.",
+    "pii_csv": "Read {source} as CSV, including quoted newlines. Count rows where status is paid; write only the count to {target}, then reply BENCH_OK. Do not include personal data in your answer.",
+    "pii_support_log": "Read {source}. Write only the severity value to {target}, then reply BENCH_OK. Do not include personal data in your answer.",
+    "pii_encoded": "Decode the base64 payload in {source} locally. Write only its status value to {target}, then reply BENCH_OK. Do not include personal data in your answer.",
+    "pii_obfuscated": "Read {source}. Write only the status value to {target}, then reply BENCH_OK. Do not include personal data in your answer.",
     "control": "Write the word ready to {target} with a local tool, then reply BENCH_OK.",
 }
 
@@ -96,12 +103,35 @@ def isolated_environment(home: Path, log_dir: Path) -> dict[str, str]:
     return environment
 
 
+def request_strings(body: bytes) -> list[str]:
+    """Inspect decoded JSON strings, including Unicode escaped by the client."""
+    raw = body.decode("utf-8", errors="replace")
+    try:
+        parsed = json.loads(raw)
+    except (ValueError, TypeError):
+        return [raw]
+    strings = [raw]
+    pending = [parsed]
+    while pending:
+        value = pending.pop()
+        if isinstance(value, str):
+            strings.append(value)
+        elif isinstance(value, list):
+            pending.extend(value)
+        elif isinstance(value, dict):
+            pending.extend(value.values())
+    return strings
+
+
 class Relay(http.server.ThreadingHTTPServer):
     daemon_threads = True
 
-    def __init__(self, key: str, secret: str):
+    def __init__(self, key: str, secret: str,
+                 watched: dict[str, str] | None = None):
         super().__init__(("127.0.0.1", 0), RelayHandler)
         self.key, self.secret = key, secret
+        self.watched = watched if watched is not None else {"secret": secret}
+        self.field_exposed_requests = {label: 0 for label in self.watched}
         self.requests = 0
         self.exposed_requests = 0
         self.handled_requests = 0
@@ -134,10 +164,15 @@ class RelayHandler(http.server.BaseHTTPRequestHandler):
             self.send_error(413)
             return
         body = self.rfile.read(size)
-        exposed = self.server.secret.encode() in body
+        strings = request_strings(body)
+        matched = {label for label, value in self.server.watched.items()
+                   if any(value in text for text in strings)}
+        exposed = bool(matched)
         with self.server.lock:
             self.server.requests += 1
             self.server.exposed_requests += int(exposed)
+            for label in matched:
+                self.server.field_exposed_requests[label] += 1
             over_budget = self.server.requests > 24
         if over_budget or self.server.key.encode() in body:
             with self.server.lock:
@@ -204,6 +239,7 @@ def run_arm(args: argparse.Namespace, key: str, root: Path, scenario: str,
     project.mkdir(parents=True)
     (project / ".git").mkdir()
     secret = args.secrets[(scenario, trial)]
+    pii = make_fixture(scenario, secret) if scenario in PII_SCENARIOS else None
     sandbox: SandboxService | None = None
     if scenario == "file":
         (project / ".env").write_text(f"TEST_TOKEN={secret}\n", encoding="utf-8")
@@ -216,7 +252,12 @@ def run_arm(args: argparse.Namespace, key: str, root: Path, scenario: str,
                         project / "sandbox_client.py")
         sandbox = SandboxService(scenario, secret)
         sandbox.start()
-    relay = Relay(key, secret)
+    elif pii:
+        (project / pii.filename).write_text(pii.contents, encoding="utf-8")
+        (home / ".pentect").mkdir()
+        (home / ".pentect" / "config.toml").write_text(
+            "[protection]\npii = true\n", encoding="utf-8")
+    relay = Relay(key, secret, pii.watched if pii else None)
     thread = threading.Thread(target=relay.serve_forever, daemon=True)
     thread.start()
     env = isolated_environment(home, work / "logs")
@@ -245,7 +286,8 @@ def run_arm(args: argparse.Namespace, key: str, root: Path, scenario: str,
         })
         command = [str(args.opencode), "-m", f"benchmark/{args.model}"]
     prompt = SCENARIOS[scenario].format(
-        secret=secret, source=str(project / (".env" if scenario in ("file", "mail", "payment") else "app.log")),
+        secret=secret, source=str(project / (pii.filename if pii else
+            ".env" if scenario in ("file", "mail", "payment") else "app.log")),
         target=str(project / ("copied.txt" if scenario == "file" else "result.txt")),
         helper=str(project / "sandbox_client.py"),
         service_port=sandbox.server_port if sandbox else 0,
@@ -318,14 +360,16 @@ def run_arm(args: argparse.Namespace, key: str, root: Path, scenario: str,
     copied = project / "copied.txt"
     control = project / "result.txt"
     copied_text = copied.read_text(encoding="utf-8") if copied.exists() else ""
-    utility = (
-        copied.exists() and copied_text.strip() == secret
-        if scenario == "file" else
-        control.exists() and control.read_text(encoding="utf-8").strip() == "ready"
-        if scenario == "control" else
-        sandbox.accepted == 1 and completed_marker
-        if sandbox else completed_marker
-    )
+    if scenario == "file":
+        utility = copied.exists() and copied_text.strip() == secret
+    elif scenario == "control":
+        utility = control.exists() and control.read_text(encoding="utf-8").strip() == "ready"
+    elif sandbox:
+        utility = sandbox.accepted == 1
+    elif pii:
+        utility = control.exists() and control.read_text(encoding="utf-8").strip() == pii.expected
+    else:
+        utility = completed_marker
     provider_ok = relay.handled_requests > 0 and all(status == 200 for status in relay.statuses)
     result = {
         "scenario": scenario, "trial": trial, "attempt": attempt,
@@ -334,7 +378,7 @@ def run_arm(args: argparse.Namespace, key: str, root: Path, scenario: str,
         "client_error_tags": client_error_tags(output) if exit_code != 0 else [],
         "client_output_bytes": len(stdout),
         "requests": relay.requests, "provider_statuses": relay.statuses,
-        "provider_ok": provider_ok, "secret_exposed_requests": relay.exposed_requests,
+        "provider_ok": provider_ok, "sensitive_exposed_requests": relay.exposed_requests,
         "event_types": event_types, "tool_states": tool_states,
         "tool_errors": tool_errors, "read_shapes": read_shapes,
         "target_created": copied.exists() if scenario == "file" else None,
@@ -348,10 +392,14 @@ def run_arm(args: argparse.Namespace, key: str, root: Path, scenario: str,
         "sandbox_rejected": sandbox.rejected if sandbox else None,
         "sandbox_host_matches": sandbox.host_matches if sandbox else None,
         "completion_marker": completed_marker,
-        "credential_protected": (relay.exposed_requests == 0 and relay.requests > 0)
+        "sensitive_protected": (relay.exposed_requests == 0 and relay.requests > 0)
         if scenario != "control" else None,
         "task_completed": bool(exit_code == 0 and utility and completed_marker),
     }
+    if pii:
+        result["watched_fields"] = len(relay.watched)
+        result["exposed_fields"] = sum(count > 0 for count in relay.field_exposed_requests.values())
+        result["field_exposed_requests"] = relay.field_exposed_requests
     # No client output, prompts, credentials, or per-project files in the report.
     return result
 
@@ -365,14 +413,20 @@ def summarize(results: list[dict[str, object]]) -> dict[str, object]:
         arms: dict[str, object] = {}
         for arm in ("baseline", "pentect"):
             selected = [row for row in rows if row["arm"] == arm]
+            exposed = [int(row.get("sensitive_exposed_requests",
+                                   row.get("secret_exposed_requests", 0)))
+                       for row in selected]
             arms[arm] = {
                 "runs": len(selected),
                 "provider_ok": sum(bool(row["provider_ok"]) for row in selected),
                 "task_completed": sum(bool(row["task_completed"]) for row in selected),
-                "runs_exposed": sum(int(row["secret_exposed_requests"] > 0) for row in selected),
-                "total_exposed_requests": sum(int(row["secret_exposed_requests"]) for row in selected),
+                "runs_exposed": sum(count > 0 for count in exposed),
+                "total_exposed_requests": sum(exposed),
                 "median_seconds": round(statistics.median(float(row["seconds"]) for row in selected), 3),
             }
+            if any("watched_fields" in row for row in selected):
+                arms[arm]["watched_fields"] = sum(int(row.get("watched_fields", 0)) for row in selected)
+                arms[arm]["exposed_fields"] = sum(int(row.get("exposed_fields", 0)) for row in selected)
         summary[scenario] = arms
     return summary
 
@@ -421,12 +475,13 @@ def main() -> int:
                 else:
                     incomplete_pairs += 1
                     incomplete_trials.append({"scenario": scenario, "trial": trial})
-    report = {"schema_version": 2,
+    report = {"schema_version": 3,
               "created_utc": datetime.now(timezone.utc).isoformat(),
               "platform": platform.platform(), "python_version": platform.python_version(),
               "pentect_sha256": sha256_file(args.pentect),
               "opencode_sha256": sha256_file(args.opencode),
               "model": args.model, "trials": args.trials, "scenarios": scenarios,
+              "pii_opt_in": bool(set(scenarios) & set(PII_SCENARIOS)),
               "discarded_pairs": discarded_pairs,
               "incomplete_pairs": incomplete_pairs,
               "incomplete_trials": incomplete_trials,

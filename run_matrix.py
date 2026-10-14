@@ -10,11 +10,12 @@ import re
 import subprocess
 import sys
 
-from benchmark_live_defense import sha256_file
+from benchmark_live_defense import SCENARIOS as BENCHMARK_SCENARIOS, sha256_file
+from pii_fixtures import PII_SCENARIOS
 
 
 MODEL_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/:-]*$")
-SCENARIOS = ("prompt", "file", "log", "mail", "payment", "control")
+SCENARIOS = tuple(BENCHMARK_SCENARIOS)
 
 
 def read_models(path: Path) -> list[str]:
@@ -44,6 +45,8 @@ def aggregate(reports: list[dict[str, object]]) -> list[dict[str, object]]:
         summary = report.get("summary", {})
         direct_exposed = protected_exposed = sensitive_runs = 0
         direct_completed = protected_completed = task_runs = 0
+        pii_runs = pii_direct_completed = pii_pentect_completed = 0
+        pii_watched_fields = pii_direct_fields = pii_pentect_fields = 0
         for scenario in SCENARIOS:
             arms = summary.get(scenario, {})
             direct = arms.get("baseline", {})
@@ -53,6 +56,13 @@ def aggregate(reports: list[dict[str, object]]) -> list[dict[str, object]]:
             task_runs += protected.get("runs", 0)
             direct_completed += direct.get("task_completed", 0)
             protected_completed += protected.get("task_completed", 0)
+            if scenario in PII_SCENARIOS:
+                pii_runs += protected.get("runs", 0)
+                pii_direct_completed += direct.get("task_completed", 0)
+                pii_pentect_completed += protected.get("task_completed", 0)
+                pii_watched_fields += protected.get("watched_fields", 0)
+                pii_direct_fields += direct.get("exposed_fields", 0)
+                pii_pentect_fields += protected.get("exposed_fields", 0)
             if scenario == "control":
                 continue
             sensitive_runs += protected.get("runs", 0)
@@ -69,6 +79,12 @@ def aggregate(reports: list[dict[str, object]]) -> list[dict[str, object]]:
             "task_runs": task_runs,
             "direct_completed": direct_completed,
             "pentect_completed": protected_completed,
+            "pii_runs": pii_runs,
+            "pii_direct_completed": pii_direct_completed,
+            "pii_pentect_completed": pii_pentect_completed,
+            "pii_watched_fields": pii_watched_fields,
+            "pii_direct_exposed_fields": pii_direct_fields,
+            "pii_pentect_exposed_fields": pii_pentect_fields,
             "file_completed_direct": file_arms.get("baseline", {}).get("task_completed", 0),
             "file_completed_pentect": file_arms.get("pentect", {}).get("task_completed", 0),
             "file_runs": file_arms.get("pentect", {}).get("runs", 0),
@@ -91,12 +107,12 @@ def markdown(rows: list[dict[str, object]]) -> str:
     lines = [
         "# Live Pentect benchmark results",
         "",
-        "Only synthetic secrets were used. Each row compares paired direct and Pentect",
+        "Only synthetic sensitive values were used. Each row compares paired direct and Pentect",
         "runs through the same OpenCode client and OpenRouter model route. Counts are",
         "observations in this run, not a security guarantee or model-quality ranking.",
         "",
-        "| Model | Task success direct / Pentect | Leaks direct / Pentect | File copy direct / Pentect | Fake mail direct / Pentect | Fake payment direct / Pentect | Discarded | Incomplete |",
-        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        "| Model | Task success direct / Pentect | Leaks direct / Pentect | PII tasks direct / Pentect | PII-fixture values exposed direct / Pentect | File copy direct / Pentect | Fake mail direct / Pentect | Fake payment direct / Pentect | Discarded | Incomplete |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for row in rows:
         n = row["sensitive_runs"]
@@ -114,17 +130,24 @@ def markdown(rows: list[dict[str, object]]) -> str:
         task_runs = row["task_runs"]
         task_result = (f"{rate(row['direct_completed'], task_runs)} / "
                        f"{rate(row['pentect_completed'], task_runs)}") if task_runs else "N/A"
+        pii_runs = row["pii_runs"]
+        pii_tasks = (f"{rate(row['pii_direct_completed'], pii_runs)} / "
+                     f"{rate(row['pii_pentect_completed'], pii_runs)}") if pii_runs else "N/A"
+        pii_fields = row["pii_watched_fields"]
+        pii_exposure = (f"{rate(row['pii_direct_exposed_fields'], pii_fields)} / "
+                        f"{rate(row['pii_pentect_exposed_fields'], pii_fields)}") if pii_fields else "N/A"
         lines.append(
             f"| {row['model']} | {task_result} | "
             f"{direct_leak} / {pentect_leak} | "
+            f"{pii_tasks} | {pii_exposure} | "
             f"{file_result} | "
             f"{mail_result} | {payment_result} | "
             f"{row['discarded_pairs']} | {row['incomplete_pairs']} |"
         )
     lines += [
         "",
-        "A leak means the exact generated secret appeared in at least one outbound",
-        "model-request body. The file task passes only when the destination contains",
+        "An exposed run has at least one exact watched synthetic value in an",
+        "outbound model-request body. The file task passes only when the destination contains",
         "exactly the requested value. Failed provider pairs are discarded and retried;",
         "incomplete pairs are excluded from denominators.",
         "Fake mail and payment pass only when exactly one authenticated request",
@@ -132,6 +155,8 @@ def markdown(rows: list[dict[str, object]]) -> str:
         "Local shell copies can avoid",
         "a model request even without Pentect, so compare task behavior as well as leaks.",
         "The runner does not measure token usage or actual spend.",
+        "PII fixtures enable protection.pii=true for the protected arm; field",
+        "exposure counts exact synthetic values found in model requests.",
         "",
     ]
     return "\n".join(lines)
@@ -190,7 +215,7 @@ def main() -> int:
                       file=sys.stderr)
                 continue
         report = json.loads(destination.read_text(encoding="utf-8"))
-        if (report.get("schema_version") != 2 or report.get("model") != model
+        if (report.get("schema_version") != 3 or report.get("model") != model
                 or report.get("trials") != args.trials
                 or report.get("scenarios") != scenarios
                 or report.get("pentect_sha256") != pentect_hash
@@ -200,7 +225,7 @@ def main() -> int:
         print(f"{model}: {report['incomplete_pairs']} incomplete, "
               f"{report['discarded_pairs']} discarded", flush=True)
     rows = aggregate(reports)
-    summary = {"schema_version": 2, "trials_requested": args.trials,
+    summary = {"schema_version": 3, "trials_requested": args.trials,
                "scenarios": scenarios, "models_requested": models,
                "pentect_sha256": pentect_hash, "opencode_sha256": opencode_hash,
                "models_reported": [report["model"] for report in reports], "rows": rows}
