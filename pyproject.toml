@@ -1,0 +1,8 @@
+[project]
+name = "pentect-bench"
+version = "0.1.0"
+description = "Paired live benchmark for Pentect privacy protection and agent utility"
+requires-python = ">=3.11"
+
+[tool.setuptools]
+py-modules = ["benchmark_live_defense", "run_matrix"]

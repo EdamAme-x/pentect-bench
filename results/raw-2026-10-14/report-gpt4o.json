@@ -1,0 +1,1001 @@
+{
+  "model": "openai/gpt-4o",
+  "trials": 3,
+  "discarded_pairs": 0,
+  "incomplete_pairs": 0,
+  "summary": {
+    "prompt": {
+      "baseline": {
+        "runs": 3,
+        "provider_ok": 3,
+        "task_completed": 3,
+        "runs_exposed": 3,
+        "total_exposed_requests": 6,
+        "median_seconds": 4.359
+      },
+      "pentect": {
+        "runs": 3,
+        "provider_ok": 3,
+        "task_completed": 3,
+        "runs_exposed": 0,
+        "total_exposed_requests": 0,
+        "median_seconds": 5.125
+      }
+    },
+    "file": {
+      "baseline": {
+        "runs": 3,
+        "provider_ok": 3,
+        "task_completed": 1,
+        "runs_exposed": 3,
+        "total_exposed_requests": 6,
+        "median_seconds": 7.031
+      },
+      "pentect": {
+        "runs": 3,
+        "provider_ok": 3,
+        "task_completed": 0,
+        "runs_exposed": 0,
+        "total_exposed_requests": 0,
+        "median_seconds": 9.453
+      }
+    },
+    "log": {
+      "baseline": {
+        "runs": 3,
+        "provider_ok": 3,
+        "task_completed": 3,
+        "runs_exposed": 3,
+        "total_exposed_requests": 3,
+        "median_seconds": 6.89
+      },
+      "pentect": {
+        "runs": 3,
+        "provider_ok": 3,
+        "task_completed": 3,
+        "runs_exposed": 0,
+        "total_exposed_requests": 0,
+        "median_seconds": 7.547
+      }
+    },
+    "control": {
+      "baseline": {
+        "runs": 3,
+        "provider_ok": 3,
+        "task_completed": 3,
+        "runs_exposed": 0,
+        "total_exposed_requests": 0,
+        "median_seconds": 7.735
+      },
+      "pentect": {
+        "runs": 3,
+        "provider_ok": 3,
+        "task_completed": 3,
+        "runs_exposed": 0,
+        "total_exposed_requests": 0,
+        "median_seconds": 6.079
+      }
+    }
+  },
+  "results": [
+    {
+      "scenario": "prompt",
+      "trial": 0,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 4.485,
+      "requests": 2,
+      "provider_statuses": [
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 2,
+      "event_types": {
+        "step_start": 1,
+        "text": 1,
+        "step_finish": 1
+      },
+      "tool_states": {},
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": false,
+      "task_completed": true
+    },
+    {
+      "scenario": "prompt",
+      "trial": 0,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 5.125,
+      "requests": 2,
+      "provider_statuses": [
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 1,
+        "text": 1,
+        "step_finish": 1
+      },
+      "tool_states": {},
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": true,
+      "task_completed": true
+    },
+    {
+      "scenario": "prompt",
+      "trial": 1,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 4.86,
+      "requests": 2,
+      "provider_statuses": [
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 1,
+        "text": 1,
+        "step_finish": 1
+      },
+      "tool_states": {},
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": true,
+      "task_completed": true
+    },
+    {
+      "scenario": "prompt",
+      "trial": 1,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 4.359,
+      "requests": 2,
+      "provider_statuses": [
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 2,
+      "event_types": {
+        "step_start": 1,
+        "text": 1,
+        "step_finish": 1
+      },
+      "tool_states": {},
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": false,
+      "task_completed": true
+    },
+    {
+      "scenario": "prompt",
+      "trial": 2,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 3.797,
+      "requests": 2,
+      "provider_statuses": [
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 2,
+      "event_types": {
+        "step_start": 1,
+        "text": 1,
+        "step_finish": 1
+      },
+      "tool_states": {},
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": false,
+      "task_completed": true
+    },
+    {
+      "scenario": "prompt",
+      "trial": 2,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 5.938,
+      "requests": 2,
+      "provider_statuses": [
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 1,
+        "text": 1,
+        "step_finish": 1
+      },
+      "tool_states": {},
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": true,
+      "task_completed": true
+    },
+    {
+      "scenario": "file",
+      "trial": 0,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 6.734,
+      "requests": 4,
+      "provider_statuses": [
+        200,
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 2,
+      "event_types": {
+        "step_start": 3,
+        "tool_use": 2,
+        "step_finish": 3,
+        "text": 1
+      },
+      "tool_states": {
+        "read:completed": 1,
+        "write:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [
+        {
+          "key_label": true,
+          "opaque_handle": false,
+          "plaintext": true
+        }
+      ],
+      "target_created": true,
+      "target_exact": true,
+      "target_contains_handle": false,
+      "target_contains_plaintext": true,
+      "target_has_key_label": false,
+      "completion_marker": true,
+      "credential_protected": false,
+      "task_completed": true
+    },
+    {
+      "scenario": "file",
+      "trial": 0,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 8.187,
+      "requests": 4,
+      "provider_statuses": [
+        200,
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 3,
+        "tool_use": 2,
+        "step_finish": 3,
+        "text": 1
+      },
+      "tool_states": {
+        "read:completed": 1,
+        "write:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [
+        {
+          "key_label": true,
+          "opaque_handle": false,
+          "plaintext": true
+        }
+      ],
+      "target_created": true,
+      "target_exact": false,
+      "target_contains_handle": false,
+      "target_contains_plaintext": true,
+      "target_has_key_label": true,
+      "completion_marker": true,
+      "credential_protected": true,
+      "task_completed": false
+    },
+    {
+      "scenario": "file",
+      "trial": 1,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 9.453,
+      "requests": 4,
+      "provider_statuses": [
+        200,
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 3,
+        "tool_use": 2,
+        "step_finish": 3,
+        "text": 1
+      },
+      "tool_states": {
+        "read:completed": 1,
+        "write:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [
+        {
+          "key_label": true,
+          "opaque_handle": false,
+          "plaintext": true
+        }
+      ],
+      "target_created": true,
+      "target_exact": false,
+      "target_contains_handle": false,
+      "target_contains_plaintext": true,
+      "target_has_key_label": true,
+      "completion_marker": true,
+      "credential_protected": true,
+      "task_completed": false
+    },
+    {
+      "scenario": "file",
+      "trial": 1,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 8.719,
+      "requests": 4,
+      "provider_statuses": [
+        200,
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 2,
+      "event_types": {
+        "step_start": 3,
+        "tool_use": 3,
+        "step_finish": 3,
+        "text": 1
+      },
+      "tool_states": {
+        "read:error": 1,
+        "read:completed": 1,
+        "write:completed": 1
+      },
+      "tool_errors": [
+        "read:not found"
+      ],
+      "read_shapes": [
+        {
+          "key_label": true,
+          "opaque_handle": false,
+          "plaintext": true
+        }
+      ],
+      "target_created": true,
+      "target_exact": false,
+      "target_contains_handle": false,
+      "target_contains_plaintext": true,
+      "target_has_key_label": true,
+      "completion_marker": true,
+      "credential_protected": false,
+      "task_completed": false
+    },
+    {
+      "scenario": "file",
+      "trial": 2,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 7.031,
+      "requests": 4,
+      "provider_statuses": [
+        200,
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 2,
+      "event_types": {
+        "step_start": 3,
+        "tool_use": 2,
+        "step_finish": 3,
+        "text": 1
+      },
+      "tool_states": {
+        "read:completed": 1,
+        "write:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [
+        {
+          "key_label": true,
+          "opaque_handle": false,
+          "plaintext": true
+        }
+      ],
+      "target_created": true,
+      "target_exact": false,
+      "target_contains_handle": false,
+      "target_contains_plaintext": true,
+      "target_has_key_label": true,
+      "completion_marker": true,
+      "credential_protected": false,
+      "task_completed": false
+    },
+    {
+      "scenario": "file",
+      "trial": 2,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 10.047,
+      "requests": 4,
+      "provider_statuses": [
+        200,
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 3,
+        "tool_use": 2,
+        "step_finish": 3,
+        "text": 1
+      },
+      "tool_states": {
+        "read:completed": 1,
+        "write:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [
+        {
+          "key_label": true,
+          "opaque_handle": false,
+          "plaintext": true
+        }
+      ],
+      "target_created": true,
+      "target_exact": false,
+      "target_contains_handle": false,
+      "target_contains_plaintext": true,
+      "target_has_key_label": true,
+      "completion_marker": true,
+      "credential_protected": true,
+      "task_completed": false
+    },
+    {
+      "scenario": "log",
+      "trial": 0,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 8.813,
+      "requests": 3,
+      "provider_statuses": [
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 1,
+      "event_types": {
+        "step_start": 2,
+        "tool_use": 1,
+        "step_finish": 2,
+        "text": 1
+      },
+      "tool_states": {
+        "bash:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": false,
+      "task_completed": true
+    },
+    {
+      "scenario": "log",
+      "trial": 0,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 7.547,
+      "requests": 3,
+      "provider_statuses": [
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 2,
+        "tool_use": 1,
+        "step_finish": 2,
+        "text": 1
+      },
+      "tool_states": {
+        "bash:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": true,
+      "task_completed": true
+    },
+    {
+      "scenario": "log",
+      "trial": 1,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 8.0,
+      "requests": 3,
+      "provider_statuses": [
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 2,
+        "text": 2,
+        "tool_use": 1,
+        "step_finish": 2
+      },
+      "tool_states": {
+        "bash:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": true,
+      "task_completed": true
+    },
+    {
+      "scenario": "log",
+      "trial": 1,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 6.078,
+      "requests": 3,
+      "provider_statuses": [
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 1,
+      "event_types": {
+        "step_start": 2,
+        "tool_use": 1,
+        "step_finish": 2,
+        "text": 1
+      },
+      "tool_states": {
+        "bash:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": false,
+      "task_completed": true
+    },
+    {
+      "scenario": "log",
+      "trial": 2,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 6.89,
+      "requests": 3,
+      "provider_statuses": [
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 1,
+      "event_types": {
+        "step_start": 2,
+        "tool_use": 1,
+        "step_finish": 2,
+        "text": 1
+      },
+      "tool_states": {
+        "bash:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": false,
+      "task_completed": true
+    },
+    {
+      "scenario": "log",
+      "trial": 2,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 7.204,
+      "requests": 3,
+      "provider_statuses": [
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 2,
+        "tool_use": 1,
+        "step_finish": 2,
+        "text": 1
+      },
+      "tool_states": {
+        "bash:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": true,
+      "task_completed": true
+    },
+    {
+      "scenario": "control",
+      "trial": 0,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 7.735,
+      "requests": 4,
+      "provider_statuses": [
+        200,
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 3,
+        "tool_use": 2,
+        "step_finish": 3,
+        "text": 1
+      },
+      "tool_states": {
+        "read:error": 1,
+        "write:completed": 1
+      },
+      "tool_errors": [
+        "read:not found"
+      ],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": null,
+      "task_completed": true
+    },
+    {
+      "scenario": "control",
+      "trial": 0,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 5.843,
+      "requests": 3,
+      "provider_statuses": [
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 2,
+        "tool_use": 1,
+        "step_finish": 2,
+        "text": 1
+      },
+      "tool_states": {
+        "write:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": null,
+      "task_completed": true
+    },
+    {
+      "scenario": "control",
+      "trial": 1,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 6.141,
+      "requests": 3,
+      "provider_statuses": [
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 2,
+        "tool_use": 1,
+        "step_finish": 2,
+        "text": 1
+      },
+      "tool_states": {
+        "write:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": null,
+      "task_completed": true
+    },
+    {
+      "scenario": "control",
+      "trial": 1,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 12.718,
+      "requests": 3,
+      "provider_statuses": [
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 2,
+        "tool_use": 1,
+        "step_finish": 2,
+        "text": 1
+      },
+      "tool_states": {
+        "write:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": null,
+      "task_completed": true
+    },
+    {
+      "scenario": "control",
+      "trial": 2,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 7.172,
+      "requests": 3,
+      "provider_statuses": [
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 2,
+        "tool_use": 1,
+        "step_finish": 2,
+        "text": 1
+      },
+      "tool_states": {
+        "write:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": null,
+      "task_completed": true
+    },
+    {
+      "scenario": "control",
+      "trial": 2,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "openai/gpt-4o",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 6.079,
+      "requests": 3,
+      "provider_statuses": [
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 2,
+        "tool_use": 1,
+        "step_finish": 2,
+        "text": 1
+      },
+      "tool_states": {
+        "write:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": null,
+      "task_completed": true
+    }
+  ]
+}

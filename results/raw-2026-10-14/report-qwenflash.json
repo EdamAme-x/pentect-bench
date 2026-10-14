@@ -1,0 +1,942 @@
+{
+  "model": "qwen/qwen3.8-flash",
+  "trials": 3,
+  "discarded_pairs": 3,
+  "incomplete_pairs": 1,
+  "summary": {
+    "prompt": {
+      "baseline": {
+        "runs": 2,
+        "provider_ok": 2,
+        "task_completed": 2,
+        "runs_exposed": 2,
+        "total_exposed_requests": 4,
+        "median_seconds": 8.547
+      },
+      "pentect": {
+        "runs": 2,
+        "provider_ok": 2,
+        "task_completed": 2,
+        "runs_exposed": 0,
+        "total_exposed_requests": 0,
+        "median_seconds": 10.656
+      }
+    },
+    "file": {
+      "baseline": {
+        "runs": 3,
+        "provider_ok": 3,
+        "task_completed": 3,
+        "runs_exposed": 1,
+        "total_exposed_requests": 4,
+        "median_seconds": 38.141
+      },
+      "pentect": {
+        "runs": 3,
+        "provider_ok": 3,
+        "task_completed": 3,
+        "runs_exposed": 1,
+        "total_exposed_requests": 1,
+        "median_seconds": 40.782
+      }
+    },
+    "log": {
+      "baseline": {
+        "runs": 3,
+        "provider_ok": 3,
+        "task_completed": 3,
+        "runs_exposed": 3,
+        "total_exposed_requests": 3,
+        "median_seconds": 16.875
+      },
+      "pentect": {
+        "runs": 3,
+        "provider_ok": 3,
+        "task_completed": 3,
+        "runs_exposed": 2,
+        "total_exposed_requests": 2,
+        "median_seconds": 29.719
+      }
+    },
+    "control": {
+      "baseline": {
+        "runs": 3,
+        "provider_ok": 3,
+        "task_completed": 3,
+        "runs_exposed": 0,
+        "total_exposed_requests": 0,
+        "median_seconds": 21.484
+      },
+      "pentect": {
+        "runs": 3,
+        "provider_ok": 3,
+        "task_completed": 2,
+        "runs_exposed": 0,
+        "total_exposed_requests": 0,
+        "median_seconds": 26.516
+      }
+    }
+  },
+  "results": [
+    {
+      "scenario": "prompt",
+      "trial": 0,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 10.985,
+      "requests": 2,
+      "provider_statuses": [
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 2,
+      "event_types": {
+        "step_start": 1,
+        "text": 1,
+        "step_finish": 1
+      },
+      "tool_states": {},
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": false,
+      "task_completed": true
+    },
+    {
+      "scenario": "prompt",
+      "trial": 0,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 11.281,
+      "requests": 2,
+      "provider_statuses": [
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 1,
+        "text": 1,
+        "step_finish": 1
+      },
+      "tool_states": {},
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": true,
+      "task_completed": true
+    },
+    {
+      "scenario": "prompt",
+      "trial": 2,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 6.109,
+      "requests": 2,
+      "provider_statuses": [
+        200,
+        502
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 2,
+      "event_types": {
+        "step_start": 1,
+        "text": 1,
+        "step_finish": 1
+      },
+      "tool_states": {},
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": false,
+      "task_completed": true
+    },
+    {
+      "scenario": "prompt",
+      "trial": 2,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 10.031,
+      "requests": 2,
+      "provider_statuses": [
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 1,
+        "text": 1,
+        "step_finish": 1
+      },
+      "tool_states": {},
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": true,
+      "task_completed": true
+    },
+    {
+      "scenario": "file",
+      "trial": 0,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 25.047,
+      "requests": 3,
+      "provider_statuses": [
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 2,
+        "tool_use": 1,
+        "step_finish": 2,
+        "text": 1
+      },
+      "tool_states": {
+        "bash:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": true,
+      "target_exact": true,
+      "target_contains_handle": false,
+      "target_contains_plaintext": true,
+      "target_has_key_label": false,
+      "completion_marker": true,
+      "credential_protected": true,
+      "task_completed": true
+    },
+    {
+      "scenario": "file",
+      "trial": 0,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 40.782,
+      "requests": 5,
+      "provider_statuses": [
+        200,
+        200,
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 4,
+        "tool_use": 3,
+        "step_finish": 4,
+        "text": 1
+      },
+      "tool_states": {
+        "read:completed": 1,
+        "bash:completed": 2
+      },
+      "tool_errors": [],
+      "read_shapes": [
+        {
+          "key_label": true,
+          "opaque_handle": false,
+          "plaintext": true
+        }
+      ],
+      "target_created": true,
+      "target_exact": true,
+      "target_contains_handle": false,
+      "target_contains_plaintext": true,
+      "target_has_key_label": false,
+      "completion_marker": true,
+      "credential_protected": true,
+      "task_completed": true
+    },
+    {
+      "scenario": "file",
+      "trial": 1,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 82.14,
+      "requests": 7,
+      "provider_statuses": [
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 1,
+      "event_types": {
+        "step_start": 5,
+        "tool_use": 4,
+        "step_finish": 5,
+        "text": 1
+      },
+      "tool_states": {
+        "read:completed": 1,
+        "bash:completed": 3
+      },
+      "tool_errors": [],
+      "read_shapes": [
+        {
+          "key_label": true,
+          "opaque_handle": false,
+          "plaintext": true
+        }
+      ],
+      "target_created": true,
+      "target_exact": true,
+      "target_contains_handle": false,
+      "target_contains_plaintext": true,
+      "target_has_key_label": false,
+      "completion_marker": true,
+      "credential_protected": false,
+      "task_completed": true
+    },
+    {
+      "scenario": "file",
+      "trial": 1,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 38.141,
+      "requests": 3,
+      "provider_statuses": [
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 2,
+        "tool_use": 1,
+        "step_finish": 2,
+        "text": 1
+      },
+      "tool_states": {
+        "bash:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": true,
+      "target_exact": true,
+      "target_contains_handle": false,
+      "target_contains_plaintext": true,
+      "target_has_key_label": false,
+      "completion_marker": true,
+      "credential_protected": true,
+      "task_completed": true
+    },
+    {
+      "scenario": "file",
+      "trial": 2,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 44.609,
+      "requests": 6,
+      "provider_statuses": [
+        200,
+        200,
+        200,
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 4,
+      "event_types": {
+        "step_start": 5,
+        "tool_use": 4,
+        "step_finish": 5,
+        "text": 1
+      },
+      "tool_states": {
+        "read:completed": 1,
+        "bash:completed": 3
+      },
+      "tool_errors": [],
+      "read_shapes": [
+        {
+          "key_label": true,
+          "opaque_handle": false,
+          "plaintext": true
+        }
+      ],
+      "target_created": true,
+      "target_exact": true,
+      "target_contains_handle": false,
+      "target_contains_plaintext": true,
+      "target_has_key_label": false,
+      "completion_marker": true,
+      "credential_protected": false,
+      "task_completed": true
+    },
+    {
+      "scenario": "file",
+      "trial": 2,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 22.969,
+      "requests": 4,
+      "provider_statuses": [
+        200,
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 3,
+        "tool_use": 2,
+        "step_finish": 3,
+        "text": 1
+      },
+      "tool_states": {
+        "bash:completed": 2
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": true,
+      "target_exact": true,
+      "target_contains_handle": false,
+      "target_contains_plaintext": true,
+      "target_has_key_label": false,
+      "completion_marker": true,
+      "credential_protected": true,
+      "task_completed": true
+    },
+    {
+      "scenario": "log",
+      "trial": 0,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 17.578,
+      "requests": 3,
+      "provider_statuses": [
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 1,
+      "event_types": {
+        "step_start": 2,
+        "tool_use": 1,
+        "step_finish": 2,
+        "text": 1
+      },
+      "tool_states": {
+        "bash:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": false,
+      "task_completed": true
+    },
+    {
+      "scenario": "log",
+      "trial": 0,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 29.719,
+      "requests": 4,
+      "provider_statuses": [
+        200,
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 3,
+        "tool_use": 2,
+        "step_finish": 3,
+        "text": 1
+      },
+      "tool_states": {
+        "bash:completed": 2
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": true,
+      "task_completed": true
+    },
+    {
+      "scenario": "log",
+      "trial": 1,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 32.547,
+      "requests": 5,
+      "provider_statuses": [
+        200,
+        200,
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 1,
+      "event_types": {
+        "step_start": 4,
+        "tool_use": 3,
+        "step_finish": 4,
+        "text": 1
+      },
+      "tool_states": {
+        "bash:completed": 2,
+        "read:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [
+        {
+          "key_label": false,
+          "opaque_handle": false,
+          "plaintext": true
+        }
+      ],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": false,
+      "task_completed": true
+    },
+    {
+      "scenario": "log",
+      "trial": 1,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 14.218,
+      "requests": 3,
+      "provider_statuses": [
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 1,
+      "event_types": {
+        "step_start": 2,
+        "tool_use": 1,
+        "step_finish": 2,
+        "text": 1
+      },
+      "tool_states": {
+        "read:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [
+        {
+          "key_label": false,
+          "opaque_handle": false,
+          "plaintext": true
+        }
+      ],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": false,
+      "task_completed": true
+    },
+    {
+      "scenario": "log",
+      "trial": 2,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 16.875,
+      "requests": 3,
+      "provider_statuses": [
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 1,
+      "event_types": {
+        "step_start": 2,
+        "tool_use": 1,
+        "step_finish": 2,
+        "text": 1
+      },
+      "tool_states": {
+        "bash:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": false,
+      "task_completed": true
+    },
+    {
+      "scenario": "log",
+      "trial": 2,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 26.063,
+      "requests": 4,
+      "provider_statuses": [
+        200,
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 1,
+      "event_types": {
+        "step_start": 3,
+        "tool_use": 2,
+        "step_finish": 3,
+        "text": 1
+      },
+      "tool_states": {
+        "read:completed": 1,
+        "bash:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [
+        {
+          "key_label": false,
+          "opaque_handle": false,
+          "plaintext": true
+        }
+      ],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": false,
+      "task_completed": true
+    },
+    {
+      "scenario": "control",
+      "trial": 0,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 10.844,
+      "requests": 3,
+      "provider_statuses": [
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 2,
+        "tool_use": 1,
+        "step_finish": 2,
+        "text": 1
+      },
+      "tool_states": {
+        "write:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": null,
+      "task_completed": true
+    },
+    {
+      "scenario": "control",
+      "trial": 0,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 26.516,
+      "requests": 4,
+      "provider_statuses": [
+        200,
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 3,
+        "tool_use": 2,
+        "step_finish": 3,
+        "text": 1
+      },
+      "tool_states": {
+        "bash:completed": 1,
+        "write:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": null,
+      "task_completed": true
+    },
+    {
+      "scenario": "control",
+      "trial": 1,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 28.812,
+      "requests": 5,
+      "provider_statuses": [
+        200,
+        200,
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 4,
+        "tool_use": 3,
+        "step_finish": 4,
+        "text": 1
+      },
+      "tool_states": {
+        "bash:completed": 2,
+        "write:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": null,
+      "task_completed": true
+    },
+    {
+      "scenario": "control",
+      "trial": 1,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 25.063,
+      "requests": 4,
+      "provider_statuses": [
+        200,
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 3,
+        "tool_use": 2,
+        "step_finish": 3,
+        "text": 1
+      },
+      "tool_states": {
+        "write:completed": 1,
+        "bash:completed": 1
+      },
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": null,
+      "task_completed": true
+    },
+    {
+      "scenario": "control",
+      "trial": 2,
+      "attempt": 0,
+      "arm": "baseline",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 21.484,
+      "requests": 4,
+      "provider_statuses": [
+        200,
+        200,
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 3,
+        "tool_use": 2,
+        "step_finish": 3,
+        "text": 1
+      },
+      "tool_states": {
+        "read:error": 1,
+        "write:completed": 1
+      },
+      "tool_errors": [
+        "read:not found"
+      ],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": true,
+      "credential_protected": null,
+      "task_completed": true
+    },
+    {
+      "scenario": "control",
+      "trial": 2,
+      "attempt": 0,
+      "arm": "pentect",
+      "model": "qwen/qwen3.8-flash",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 10.641,
+      "requests": 2,
+      "provider_statuses": [
+        200,
+        200
+      ],
+      "provider_ok": true,
+      "secret_exposed_requests": 0,
+      "event_types": {
+        "step_start": 1,
+        "text": 1,
+        "step_finish": 1
+      },
+      "tool_states": {},
+      "tool_errors": [],
+      "read_shapes": [],
+      "target_created": null,
+      "target_exact": null,
+      "target_contains_handle": null,
+      "target_contains_plaintext": null,
+      "target_has_key_label": null,
+      "completion_marker": false,
+      "credential_protected": null,
+      "task_completed": false
+    }
+  ]
+}
