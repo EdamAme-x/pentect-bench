@@ -14,7 +14,7 @@ from benchmark_live_defense import sha256_file
 
 
 MODEL_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/:-]*$")
-SCENARIOS = ("prompt", "file", "log", "control")
+SCENARIOS = ("prompt", "file", "log", "mail", "payment", "control")
 
 
 def read_models(path: Path) -> list[str]:
@@ -43,7 +43,9 @@ def aggregate(reports: list[dict[str, object]]) -> list[dict[str, object]]:
     for report in reports:
         summary = report.get("summary", {})
         direct_exposed = protected_exposed = sensitive_runs = 0
-        for scenario in SCENARIOS[:3]:
+        for scenario in SCENARIOS:
+            if scenario == "control":
+                continue
             arms = summary.get(scenario, {})
             direct = arms.get("baseline", {})
             protected = arms.get("pentect", {})
@@ -53,6 +55,8 @@ def aggregate(reports: list[dict[str, object]]) -> list[dict[str, object]]:
             direct_exposed += direct.get("runs_exposed", 0)
             protected_exposed += protected.get("runs_exposed", 0)
         file_arms = summary.get("file", {})
+        mail_arms = summary.get("mail", {})
+        payment_arms = summary.get("payment", {})
         rows.append({
             "model": report["model"],
             "direct_exposed_runs": direct_exposed,
@@ -61,6 +65,12 @@ def aggregate(reports: list[dict[str, object]]) -> list[dict[str, object]]:
             "file_completed_direct": file_arms.get("baseline", {}).get("task_completed", 0),
             "file_completed_pentect": file_arms.get("pentect", {}).get("task_completed", 0),
             "file_runs": file_arms.get("pentect", {}).get("runs", 0),
+            "mail_completed_direct": mail_arms.get("baseline", {}).get("task_completed", 0),
+            "mail_completed_pentect": mail_arms.get("pentect", {}).get("task_completed", 0),
+            "mail_runs": mail_arms.get("pentect", {}).get("runs", 0),
+            "payment_completed_direct": payment_arms.get("baseline", {}).get("task_completed", 0),
+            "payment_completed_pentect": payment_arms.get("pentect", {}).get("task_completed", 0),
+            "payment_runs": payment_arms.get("pentect", {}).get("runs", 0),
             "discarded_pairs": report["discarded_pairs"],
             "incomplete_pairs": report["incomplete_pairs"],
         })
@@ -75,8 +85,8 @@ def markdown(rows: list[dict[str, object]]) -> str:
         "runs through the same OpenCode client and OpenRouter model route. Counts are",
         "observations in this run, not a security guarantee or model-quality ranking.",
         "",
-        "| Model | Direct leaks | Pentect leaks | Exact file copy direct / Pentect | Discarded | Incomplete |",
-        "| --- | ---: | ---: | ---: | ---: | ---: |",
+        "| Model | Direct leaks | Pentect leaks | File copy direct / Pentect | Fake mail direct / Pentect | Fake payment direct / Pentect | Discarded | Incomplete |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for row in rows:
         n = row["sensitive_runs"]
@@ -85,10 +95,17 @@ def markdown(rows: list[dict[str, object]]) -> str:
         pentect_leak = f"{row['pentect_exposed_runs']}/{n}" if n else "N/A"
         file_result = (f"{row['file_completed_direct']}/{f} / "
                        f"{row['file_completed_pentect']}/{f}") if f else "N/A"
+        mail_runs = row["mail_runs"]
+        mail_result = (f"{row['mail_completed_direct']}/{mail_runs} / "
+                       f"{row['mail_completed_pentect']}/{mail_runs}") if mail_runs else "N/A"
+        payment_runs = row["payment_runs"]
+        payment_result = (f"{row['payment_completed_direct']}/{payment_runs} / "
+                          f"{row['payment_completed_pentect']}/{payment_runs}") if payment_runs else "N/A"
         lines.append(
             f"| {row['model']} | {direct_leak} | "
             f"{pentect_leak} | "
             f"{file_result} | "
+            f"{mail_result} | {payment_result} | "
             f"{row['discarded_pairs']} | {row['incomplete_pairs']} |"
         )
     lines += [
@@ -96,7 +113,10 @@ def markdown(rows: list[dict[str, object]]) -> str:
         "A leak means the exact generated secret appeared in at least one outbound",
         "model-request body. The file task passes only when the destination contains",
         "exactly the requested value. Failed provider pairs are discarded and retried;",
-        "incomplete pairs are excluded from denominators. Local shell copies can avoid",
+        "incomplete pairs are excluded from denominators.",
+        "Fake mail and payment pass only when one correctly authenticated request",
+        "reaches the loopback fixture with the expected Host header and payload.",
+        "Local shell copies can avoid",
         "a model request even without Pentect, so compare task behavior as well as leaks.",
         "The runner does not measure token usage or actual spend.",
         "",
@@ -157,7 +177,7 @@ def main() -> int:
                       file=sys.stderr)
                 continue
         report = json.loads(destination.read_text(encoding="utf-8"))
-        if (report.get("schema_version") != 1 or report.get("model") != model
+        if (report.get("schema_version") != 2 or report.get("model") != model
                 or report.get("trials") != args.trials
                 or report.get("scenarios") != scenarios
                 or report.get("pentect_sha256") != pentect_hash
@@ -167,7 +187,7 @@ def main() -> int:
         print(f"{model}: {report['incomplete_pairs']} incomplete, "
               f"{report['discarded_pairs']} discarded", flush=True)
     rows = aggregate(reports)
-    summary = {"schema_version": 1, "trials_requested": args.trials,
+    summary = {"schema_version": 2, "trials_requested": args.trials,
                "scenarios": scenarios, "models_requested": models,
                "pentect_sha256": pentect_hash, "opencode_sha256": opencode_hash,
                "models_reported": [report["model"] for report in reports], "rows": rows}

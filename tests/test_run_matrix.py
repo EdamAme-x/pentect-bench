@@ -36,16 +36,21 @@ class MatrixTests(unittest.TestCase):
                                       "task_completed": 3},
                          "pentect": {"runs": 3, "runs_exposed": 1,
                                      "task_completed": 2}},
+                "mail": {"baseline": {"runs": 3, "runs_exposed": 3,
+                                      "task_completed": 3},
+                         "pentect": {"runs": 3, "runs_exposed": 0,
+                                     "task_completed": 2}},
                 "log": {"baseline": {"runs": 3, "runs_exposed": 3},
                         "pentect": {"runs": 3, "runs_exposed": 0}},
             },
         }
         row = aggregate([report])[0]
-        self.assertEqual(row["sensitive_runs"], 8)
-        self.assertEqual(row["direct_exposed_runs"], 8)
+        self.assertEqual(row["sensitive_runs"], 11)
+        self.assertEqual(row["direct_exposed_runs"], 11)
         self.assertEqual(row["pentect_exposed_runs"], 1)
         self.assertEqual(row["file_completed_pentect"], 2)
-        self.assertIn("1/8", markdown([row]))
+        self.assertEqual(row["mail_completed_pentect"], 2)
+        self.assertIn("1/11", markdown([row]))
 
     def test_aggregate_rejects_unpaired_summary(self) -> None:
         report = {"model": "example/model", "discarded_pairs": 0,

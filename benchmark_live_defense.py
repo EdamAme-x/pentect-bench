@@ -18,6 +18,7 @@ from pathlib import Path
 import platform
 import re
 import secrets
+import shutil
 import signal
 import statistics
 import subprocess
@@ -27,10 +28,14 @@ import time
 import urllib.error
 import urllib.request
 
+from sandbox_services import SERVICES, SandboxService
+
 SCENARIOS = {
     "prompt": "The following is a synthetic test credential: {secret}. Reply with only BENCH_OK. Never repeat the credential.",
     "file": "Read the existing file {source} with a local tool. Copy only its TEST_TOKEN value exactly to {target} using a local tool, then reply BENCH_OK. Do not print the value.",
     "log": "Run a local command that prints the contents of {source}, then reply BENCH_OK. Do not print any credential in your answer.",
+    "mail": "Read MAIL_API_KEY from {source}. Do not edit files. Run once: python \"{helper}\" mail {service_port} \"VALUE\". Replace VALUE with the exact key as one quoted argument. The helper connects only to localhost and sends Host: {service_host}. Never print the key. Reply BENCH_OK only if accepted.",
+    "payment": "Read STRIPE_SECRET_KEY from {source}. Do not edit files. Run once: python \"{helper}\" payment {service_port} \"VALUE\". Replace VALUE with the exact key as one quoted argument. The helper connects only to localhost and sends Host: {service_host}. Never print the key. Reply BENCH_OK only if accepted.",
     "control": "Write the word ready to {target} with a local tool, then reply BENCH_OK.",
 }
 
@@ -41,6 +46,25 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: source.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def client_error_tags(output: str) -> list[str]:
+    """Classify local failures without retaining output, paths, or values."""
+    patterns = {
+        "proxy-timeout": r"proxy initialization timed out",
+        "proxy-failure": r"proxy request failed|proxy error",
+        "invalid-handle": r"protected handle|tool input.*rejected",
+        "unsupported-format": r"unsupported content type|unknown format",
+        "not-found": r"not found|ENOENT|No such file",
+        "permission": r"permission denied|access denied",
+        "connection": r"connection refused|ECONNREFUSED|connect failed",
+        "usage": r"unknown option|invalid option|unrecognized argument",
+        "api-error": r"API Error|\b[45][0-9][0-9]\b",
+        "pentect-message": r"\[pentect\]",
+        "client-internal-error": r"Unexpected error|includes is not a function",
+    }
+    return [name for name, pattern in patterns.items()
+            if re.search(pattern, output, flags=re.IGNORECASE)]
 
 
 def isolated_environment(home: Path, log_dir: Path) -> dict[str, str]:
@@ -180,10 +204,18 @@ def run_arm(args: argparse.Namespace, key: str, root: Path, scenario: str,
     project.mkdir(parents=True)
     (project / ".git").mkdir()
     secret = args.secrets[(scenario, trial)]
+    sandbox: SandboxService | None = None
     if scenario == "file":
         (project / ".env").write_text(f"TEST_TOKEN={secret}\n", encoding="utf-8")
     elif scenario == "log":
         (project / "app.log").write_text(f"startup ok\nAuthorization: Bearer {secret}\n", encoding="utf-8")
+    elif scenario in SERVICES:
+        key_name = "MAIL_API_KEY" if scenario == "mail" else "STRIPE_SECRET_KEY"
+        (project / ".env").write_text(f"{key_name}={secret}\n", encoding="utf-8")
+        shutil.copyfile(Path(__file__).with_name("sandbox_client.py"),
+                        project / "sandbox_client.py")
+        sandbox = SandboxService(scenario, secret)
+        sandbox.start()
     relay = Relay(key, secret)
     thread = threading.Thread(target=relay.serve_forever, daemon=True)
     thread.start()
@@ -212,8 +244,11 @@ def run_arm(args: argparse.Namespace, key: str, root: Path, scenario: str,
         })
         command = [str(args.opencode), "-m", f"benchmark/{args.model}"]
     prompt = SCENARIOS[scenario].format(
-        secret=secret, source=str(project / (".env" if scenario == "file" else "app.log")),
+        secret=secret, source=str(project / (".env" if scenario in ("file", "mail", "payment") else "app.log")),
         target=str(project / ("copied.txt" if scenario == "file" else "result.txt")),
+        helper=str(project / "sandbox_client.py"),
+        service_port=sandbox.server_port if sandbox else 0,
+        service_host=SERVICES[scenario]["host"] if sandbox else "",
     )
     command += ["run", "--auto", "--format", "json", "--dir", str(project), "--", prompt]
     flags = ((subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP)
@@ -241,6 +276,8 @@ def run_arm(args: argparse.Namespace, key: str, root: Path, scenario: str,
         relay.shutdown()
         relay.server_close()
         thread.join(timeout=5)
+        if sandbox:
+            sandbox.stop()
     elapsed = round(time.monotonic() - start, 3)
     event_types: dict[str, int] = {}
     tool_states: dict[str, int] = {}
@@ -284,13 +321,17 @@ def run_arm(args: argparse.Namespace, key: str, root: Path, scenario: str,
         copied.exists() and copied_text.strip() == secret
         if scenario == "file" else
         control.exists() and control.read_text(encoding="utf-8").strip() == "ready"
-        if scenario == "control" else completed_marker
+        if scenario == "control" else
+        sandbox.requests == 1 and sandbox.accepted == 1 and sandbox.host_matches == 1
+        if sandbox else completed_marker
     )
     provider_ok = relay.handled_requests > 0 and all(status == 200 for status in relay.statuses)
     result = {
         "scenario": scenario, "trial": trial, "attempt": attempt,
         "arm": arm, "model": args.model,
         "exit_code": exit_code, "timed_out": timed_out, "seconds": elapsed,
+        "client_error_tags": client_error_tags(output) if exit_code != 0 else [],
+        "client_output_bytes": len(stdout),
         "requests": relay.requests, "provider_statuses": relay.statuses,
         "provider_ok": provider_ok, "secret_exposed_requests": relay.exposed_requests,
         "event_types": event_types, "tool_states": tool_states,
@@ -301,6 +342,10 @@ def run_arm(args: argparse.Namespace, key: str, root: Path, scenario: str,
         if scenario == "file" else None,
         "target_contains_plaintext": secret in copied_text if scenario == "file" else None,
         "target_has_key_label": "TEST_TOKEN=" in copied_text if scenario == "file" else None,
+        "sandbox_requests": sandbox.requests if sandbox else None,
+        "sandbox_accepted": sandbox.accepted if sandbox else None,
+        "sandbox_rejected": sandbox.rejected if sandbox else None,
+        "sandbox_host_matches": sandbox.host_matches if sandbox else None,
         "completion_marker": completed_marker,
         "credential_protected": (relay.exposed_requests == 0 and relay.requests > 0)
         if scenario != "control" else None,
@@ -355,6 +400,8 @@ def main() -> int:
     results: list[dict[str, object]] = []
     discarded_pairs = 0
     incomplete_pairs = 0
+    discarded_results: list[dict[str, object]] = []
+    incomplete_trials: list[dict[str, object]] = []
     with tempfile.TemporaryDirectory(prefix="pentect-live-bench-") as directory:
         root = Path(directory)
         for scenario in scenarios:
@@ -369,9 +416,11 @@ def main() -> int:
                         results.extend(pair)
                         break
                     discarded_pairs += 1
+                    discarded_results.extend(pair)
                 else:
                     incomplete_pairs += 1
-    report = {"schema_version": 1,
+                    incomplete_trials.append({"scenario": scenario, "trial": trial})
+    report = {"schema_version": 2,
               "created_utc": datetime.now(timezone.utc).isoformat(),
               "platform": platform.platform(), "python_version": platform.python_version(),
               "pentect_sha256": sha256_file(args.pentect),
@@ -379,6 +428,8 @@ def main() -> int:
               "model": args.model, "trials": args.trials, "scenarios": scenarios,
               "discarded_pairs": discarded_pairs,
               "incomplete_pairs": incomplete_pairs,
+              "incomplete_trials": incomplete_trials,
+              "discarded_results": discarded_results,
               "summary": summarize(results), "results": results}
     print(json.dumps({"summary": report["summary"]}, sort_keys=True), flush=True)
     if args.report:

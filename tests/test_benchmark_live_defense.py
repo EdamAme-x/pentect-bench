@@ -12,10 +12,14 @@ import urllib.error
 import urllib.request
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from benchmark_live_defense import Relay, load_key, summarize  # noqa: E402
+from benchmark_live_defense import Relay, client_error_tags, load_key, summarize  # noqa: E402
 
 
 class BenchmarkTests(unittest.TestCase):
+    def test_client_failure_is_categorized_without_recording_output(self) -> None:
+        self.assertEqual(client_error_tags("Unexpected error: G.includes is not a function"),
+                         ["client-internal-error"])
+
     def test_summary_keeps_leakage_and_utility_separate(self) -> None:
         rows = [
             {"scenario": "file", "arm": "baseline", "provider_ok": True,
