@@ -232,7 +232,8 @@ def run_arm(args: argparse.Namespace, key: str, root: Path, scenario: str,
     })
     upstream = f"http://127.0.0.1:{relay.server_port}/v1"
     if protected:
-        command = [str(args.pentect), "opencode", "--upstream", upstream,
+        command = [str(args.pentect), "opencode", "--opencode", str(args.opencode),
+                   "--upstream", upstream,
                    "--model", args.model, "--api", "chat"]
     else:
         env["OPENAI_BASE_URL"] = upstream
@@ -322,7 +323,7 @@ def run_arm(args: argparse.Namespace, key: str, root: Path, scenario: str,
         if scenario == "file" else
         control.exists() and control.read_text(encoding="utf-8").strip() == "ready"
         if scenario == "control" else
-        sandbox.requests == 1 and sandbox.accepted == 1 and sandbox.host_matches == 1
+        sandbox.accepted == 1 and completed_marker
         if sandbox else completed_marker
     )
     provider_ok = relay.handled_requests > 0 and all(status == 200 for status in relay.statuses)

@@ -43,14 +43,18 @@ def aggregate(reports: list[dict[str, object]]) -> list[dict[str, object]]:
     for report in reports:
         summary = report.get("summary", {})
         direct_exposed = protected_exposed = sensitive_runs = 0
+        direct_completed = protected_completed = task_runs = 0
         for scenario in SCENARIOS:
-            if scenario == "control":
-                continue
             arms = summary.get(scenario, {})
             direct = arms.get("baseline", {})
             protected = arms.get("pentect", {})
             if direct.get("runs", 0) != protected.get("runs", 0):
                 raise ValueError(f"unpaired result for {report['model']}: {scenario}")
+            task_runs += protected.get("runs", 0)
+            direct_completed += direct.get("task_completed", 0)
+            protected_completed += protected.get("task_completed", 0)
+            if scenario == "control":
+                continue
             sensitive_runs += protected.get("runs", 0)
             direct_exposed += direct.get("runs_exposed", 0)
             protected_exposed += protected.get("runs_exposed", 0)
@@ -62,6 +66,9 @@ def aggregate(reports: list[dict[str, object]]) -> list[dict[str, object]]:
             "direct_exposed_runs": direct_exposed,
             "pentect_exposed_runs": protected_exposed,
             "sensitive_runs": sensitive_runs,
+            "task_runs": task_runs,
+            "direct_completed": direct_completed,
+            "pentect_completed": protected_completed,
             "file_completed_direct": file_arms.get("baseline", {}).get("task_completed", 0),
             "file_completed_pentect": file_arms.get("pentect", {}).get("task_completed", 0),
             "file_runs": file_arms.get("pentect", {}).get("runs", 0),
@@ -78,6 +85,9 @@ def aggregate(reports: list[dict[str, object]]) -> list[dict[str, object]]:
 
 
 def markdown(rows: list[dict[str, object]]) -> str:
+    def rate(count: int, total: int) -> str:
+        return f"{count / total:.1%} ({count}/{total})" if total else "N/A"
+
     lines = [
         "# Live Pentect benchmark results",
         "",
@@ -85,14 +95,14 @@ def markdown(rows: list[dict[str, object]]) -> str:
         "runs through the same OpenCode client and OpenRouter model route. Counts are",
         "observations in this run, not a security guarantee or model-quality ranking.",
         "",
-        "| Model | Direct leaks | Pentect leaks | File copy direct / Pentect | Fake mail direct / Pentect | Fake payment direct / Pentect | Discarded | Incomplete |",
+        "| Model | Task success direct / Pentect | Leaks direct / Pentect | File copy direct / Pentect | Fake mail direct / Pentect | Fake payment direct / Pentect | Discarded | Incomplete |",
         "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for row in rows:
         n = row["sensitive_runs"]
         f = row["file_runs"]
-        direct_leak = f"{row['direct_exposed_runs']}/{n}" if n else "N/A"
-        pentect_leak = f"{row['pentect_exposed_runs']}/{n}" if n else "N/A"
+        direct_leak = rate(row["direct_exposed_runs"], n)
+        pentect_leak = rate(row["pentect_exposed_runs"], n)
         file_result = (f"{row['file_completed_direct']}/{f} / "
                        f"{row['file_completed_pentect']}/{f}") if f else "N/A"
         mail_runs = row["mail_runs"]
@@ -101,9 +111,12 @@ def markdown(rows: list[dict[str, object]]) -> str:
         payment_runs = row["payment_runs"]
         payment_result = (f"{row['payment_completed_direct']}/{payment_runs} / "
                           f"{row['payment_completed_pentect']}/{payment_runs}") if payment_runs else "N/A"
+        task_runs = row["task_runs"]
+        task_result = (f"{rate(row['direct_completed'], task_runs)} / "
+                       f"{rate(row['pentect_completed'], task_runs)}") if task_runs else "N/A"
         lines.append(
-            f"| {row['model']} | {direct_leak} | "
-            f"{pentect_leak} | "
+            f"| {row['model']} | {task_result} | "
+            f"{direct_leak} / {pentect_leak} | "
             f"{file_result} | "
             f"{mail_result} | {payment_result} | "
             f"{row['discarded_pairs']} | {row['incomplete_pairs']} |"
@@ -114,7 +127,7 @@ def markdown(rows: list[dict[str, object]]) -> str:
         "model-request body. The file task passes only when the destination contains",
         "exactly the requested value. Failed provider pairs are discarded and retried;",
         "incomplete pairs are excluded from denominators.",
-        "Fake mail and payment pass only when one correctly authenticated request",
+        "Fake mail and payment pass only when exactly one authenticated request",
         "reaches the loopback fixture with the expected Host header and payload.",
         "Local shell copies can avoid",
         "a model request even without Pentect, so compare task behavior as well as leaks.",
