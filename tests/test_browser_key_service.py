@@ -60,6 +60,8 @@ class BrowserKeyServiceTests(unittest.TestCase):
                     page.goto(service.url)
                     page.get_by_role("button", name="Create API key").click()
                     self.assertEqual(service.issued, 1)
+                    self.assertEqual(service.issue_attempts, 2)
+                    self.assertEqual(service.browser_attempts, 2)
                 finally:
                     browser.close()
         finally:

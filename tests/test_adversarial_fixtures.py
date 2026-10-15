@@ -2,19 +2,23 @@
 from __future__ import annotations
 
 import base64
+from contextlib import closing
+import gzip
 import html
 import json
+import sqlite3
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+import zipfile
 from urllib.parse import unquote
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from adversarial_fixtures import (ADVERSARIAL_SCENARIOS, NON_SENSITIVE_SCENARIOS,
                                   make_adversarial_fixture)
-from benchmark_live_defense import SCENARIOS, prepare_git_history
+from benchmark_live_defense import SCENARIOS, prepare_git_diff, prepare_git_history
 
 
 class AdversarialFixtureTests(unittest.TestCase):
@@ -58,6 +62,14 @@ class AdversarialFixtureTests(unittest.TestCase):
             elif scenario == "unicode_escaped_json":
                 self.assertIn(fixture.watched["unicode_escapes"], fixture.contents)
                 self.assertEqual(json.loads(fixture.contents)["token"], secret)
+            elif scenario == "env_dump":
+                self.assertNotIn(secret, fixture.contents)
+                self.assertEqual(fixture.watched["environment_token"], secret)
+            elif scenario == "chunked_token":
+                parts = json.loads(fixture.contents)["secret_parts"]
+                self.assertEqual("".join(parts), fixture.watched["reconstructed"])
+                self.assertEqual(parts, [fixture.watched["part_one"],
+                                         fixture.watched["part_two"]])
             else:
                 for label, value in fixture.watched.items():
                     with self.subTest(scenario=scenario, label=label):
@@ -91,6 +103,39 @@ class AdversarialFixtureTests(unittest.TestCase):
             self.assertEqual(result.returncode, 2)
             self.assertIn("status=ready", result.stderr)
             self.assertEqual(result.stdout, "")
+
+    def test_git_diff_contains_secret_only_in_worktree(self) -> None:
+        fixture = make_adversarial_fixture("git_diff", "sk-synthetic-only")
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            prepare_git_diff(project, fixture.contents)
+            old = subprocess.check_output(
+                ["git", "-C", str(project), "show", "HEAD:config.env"], text=True)
+            diff = subprocess.check_output(
+                ["git", "-C", str(project), "diff", "--", "config.env"], text=True)
+            self.assertNotIn("sk-synthetic-only", old)
+            self.assertIn("sk-synthetic-only", diff)
+
+    def test_archive_and_database_fixtures_roundtrip(self) -> None:
+        secret = "sk-synthetic-only"
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            zipped = make_adversarial_fixture("zip_archive", secret)
+            with zipfile.ZipFile(root / zipped.filename, "w") as archive:
+                archive.writestr("config.json", zipped.contents)
+            with zipfile.ZipFile(root / zipped.filename) as archive:
+                self.assertEqual(json.loads(archive.read("config.json"))["api_token"], secret)
+            gzipped = make_adversarial_fixture("gzip_archive", secret)
+            with gzip.open(root / gzipped.filename, "wt", encoding="utf-8") as stream:
+                stream.write(gzipped.contents)
+            with gzip.open(root / gzipped.filename, "rt", encoding="utf-8") as stream:
+                self.assertEqual(json.load(stream)["api_token"], secret)
+            database_fixture = make_adversarial_fixture("sqlite_db", secret)
+            with closing(sqlite3.connect(root / database_fixture.filename)) as database:
+                database.executescript(database_fixture.contents)
+                value = database.execute(
+                    "SELECT value FROM settings WHERE name = 'api_token'").fetchone()[0]
+            self.assertEqual(value, secret)
 
 
 if __name__ == "__main__":

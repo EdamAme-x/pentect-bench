@@ -15,6 +15,8 @@ class BrowserKeyService(http.server.ThreadingHTTPServer):
         self.key = key
         self.session = secrets.token_urlsafe(20)
         self.issued = 0
+        self.issue_attempts = 0
+        self.browser_attempts = 0
         self.browser_issued = 0
         self.api_accepted = 0
         self.api_rejected = 0
@@ -87,6 +89,8 @@ class BrowserKeyHandler(http.server.BaseHTTPRequestHandler):
         browser_flow = (self.headers.get("Sec-Fetch-Site") == "same-origin" and
                         self.headers.get("Sec-Fetch-Mode") == "navigate")
         with self.server.lock:
+            self.server.issue_attempts += 1
+            self.server.browser_attempts += int(cookie_ok and browser_flow)
             valid = cookie_ok and browser_flow and self.server.issued == 0
             if valid:
                 self.server.issued += 1
