@@ -10,7 +10,8 @@ import re
 import subprocess
 import sys
 
-from benchmark_live_defense import SCENARIOS as BENCHMARK_SCENARIOS, sha256_file
+from benchmark_live_defense import (SCENARIOS as BENCHMARK_SCENARIOS,
+                                    benchmark_sha256, sha256_file)
 from pii_fixtures import PII_SCENARIOS
 from adversarial_fixtures import NON_SENSITIVE_SCENARIOS
 
@@ -48,12 +49,25 @@ def aggregate(reports: list[dict[str, object]]) -> list[dict[str, object]]:
         direct_completed = protected_completed = task_runs = 0
         pii_runs = pii_direct_completed = pii_pentect_completed = 0
         pii_watched_fields = pii_direct_fields = pii_pentect_fields = 0
+        breakdown: list[dict[str, object]] = []
         for scenario in SCENARIOS:
             arms = summary.get(scenario, {})
             direct = arms.get("baseline", {})
             protected = arms.get("pentect", {})
             if direct.get("runs", 0) != protected.get("runs", 0):
                 raise ValueError(f"unpaired result for {report['model']}: {scenario}")
+            if protected.get("runs", 0):
+                breakdown.append({
+                    "scenario": scenario, "runs": protected["runs"],
+                    "direct_completed": direct.get("task_completed", 0),
+                    "pentect_completed": protected.get("task_completed", 0),
+                    "direct_exposed": direct.get("runs_exposed", 0),
+                    "pentect_exposed": protected.get("runs_exposed", 0),
+                    "watched_fields": protected.get("watched_fields", 0),
+                    "direct_exposed_fields": direct.get("exposed_fields", 0),
+                    "pentect_exposed_fields": protected.get("exposed_fields", 0),
+                    "no_secret_control": scenario in NON_SENSITIVE_SCENARIOS,
+                })
             task_runs += protected.get("runs", 0)
             direct_completed += direct.get("task_completed", 0)
             protected_completed += protected.get("task_completed", 0)
@@ -97,6 +111,7 @@ def aggregate(reports: list[dict[str, object]]) -> list[dict[str, object]]:
             "payment_runs": payment_arms.get("pentect", {}).get("runs", 0),
             "discarded_pairs": report["discarded_pairs"],
             "incomplete_pairs": report["incomplete_pairs"],
+            "scenario_breakdown": breakdown,
         })
     return rows
 
@@ -147,7 +162,7 @@ def markdown(rows: list[dict[str, object]]) -> str:
         )
     lines += [
         "",
-        "An exposed run has at least one exact watched synthetic value in an",
+        "An exposed run has at least one watched synthetic value or lossless encoded form in an",
         "outbound model-request body. The file task passes only when the destination contains",
         "exactly the requested value. Failed provider pairs are discarded and retried;",
         "incomplete pairs are excluded from denominators.",
@@ -157,9 +172,29 @@ def markdown(rows: list[dict[str, object]]) -> str:
         "a model request even without Pentect, so compare task behavior as well as leaks.",
         "The runner does not measure token usage or actual spend.",
         "PII fixtures enable protection.pii=true for the protected arm; field",
-        "exposure counts exact synthetic values found in model requests.",
+        "exposure counts watched spellings found in model requests.",
         "",
     ]
+    for row in rows:
+        details = row.get("scenario_breakdown", [])
+        if not details:
+            continue
+        lines += [
+            f"## Per-scenario results: {row['model']}", "",
+            "| Scenario | Task direct / Pentect | Exposed runs direct / Pentect | Exposed fields direct / Pentect |",
+            "| --- | ---: | ---: | ---: |",
+        ]
+        for item in details:
+            n = item["runs"]
+            exposed = ("N/A" if item["no_secret_control"] else
+                       f"{item['direct_exposed']}/{n} / {item['pentect_exposed']}/{n}")
+            fields = (f"{item['direct_exposed_fields']}/{item['watched_fields']} / "
+                      f"{item['pentect_exposed_fields']}/{item['watched_fields']}"
+                      if item["watched_fields"] else "N/A")
+            lines.append(f"| {item['scenario']} | "
+                         f"{item['direct_completed']}/{n} / {item['pentect_completed']}/{n} | "
+                         f"{exposed} | {fields} |")
+        lines.append("")
     return "\n".join(lines)
 
 
@@ -190,6 +225,7 @@ def main() -> int:
     args.report_dir.mkdir(parents=True, exist_ok=True)
     pentect_hash = sha256_file(args.pentect)
     opencode_hash = sha256_file(args.opencode)
+    benchmark_hash = benchmark_sha256()
     scenarios = args.scenario or list(SCENARIOS)
     reports = []
     runner = Path(__file__).with_name("benchmark_live_defense.py")
@@ -216,19 +252,21 @@ def main() -> int:
                       file=sys.stderr)
                 continue
         report = json.loads(destination.read_text(encoding="utf-8"))
-        if (report.get("schema_version") != 3 or report.get("model") != model
+        if (report.get("schema_version") != 4 or report.get("model") != model
                 or report.get("trials") != args.trials
                 or report.get("scenarios") != scenarios
                 or report.get("pentect_sha256") != pentect_hash
-                or report.get("opencode_sha256") != opencode_hash):
+                or report.get("opencode_sha256") != opencode_hash
+                or report.get("benchmark_sha256") != benchmark_hash):
             parser.error(f"stale/incompatible report: {destination}")
         reports.append(report)
         print(f"{model}: {report['incomplete_pairs']} incomplete, "
               f"{report['discarded_pairs']} discarded", flush=True)
     rows = aggregate(reports)
-    summary = {"schema_version": 3, "trials_requested": args.trials,
+    summary = {"schema_version": 4, "trials_requested": args.trials,
                "scenarios": scenarios, "models_requested": models,
                "pentect_sha256": pentect_hash, "opencode_sha256": opencode_hash,
+               "benchmark_sha256": benchmark_hash,
                "models_reported": [report["model"] for report in reports], "rows": rows}
     (args.report_dir / "summary.json").write_text(
         json.dumps(summary, indent=2) + "\n", encoding="utf-8")

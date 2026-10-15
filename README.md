@@ -36,9 +36,11 @@ Do not put a real key in commands, the model list, or this repository.
 
 Omit `--model` to run every model in [models.txt](models.txt), or repeat
 `--model` to choose a subset. `--scenario` selects any scenario in the table
-below; the default is all 29. `--resume` reuses matching
-per-model reports, so omit it for a fresh measurement. `--fail-on-leak` returns
-exit code 3 if a completed Pentect trial exposed a watched synthetic value.
+below; the default is all 37. `--resume` reuses per-model reports only when
+the fixture code and both executables have identical hashes; omit it for a
+fresh measurement. `--fail-on-leak` returns exit code 3 if any completed
+baseline/Pentect pair exposed a watched value in its Pentect arm, even if the
+agent failed the task.
 
 ```sh
 python run_matrix.py \
@@ -87,12 +89,20 @@ from secret exposure (excluding the two no-secret controls).
 | Markdown table | Two credentials in a runbook table | Extract public status |
 | Browser issue key | Playwright clicks a local dashboard button to issue a one-time key | One browser issuance, one authenticated API response, and status file |
 | Browser DOM debug | Same Playwright flow, with deliberately unsafe full-DOM stdout | Same utility check; observe whether the synthetic key reaches the model |
+| YAML multi-key | Three independent credentials nested under services | Extract public status |
+| PowerShell history | Bearer token in an old command | Read without executing; extract status |
+| HTML entities | API key encoded as HTML entities | Extract public DOM status |
+| JSON Unicode escapes | Token expressed with `\uXXXX` escapes | Parse and extract status |
+| Many candidates | 25 independent credentials in one JSON file | Extract status without candidate-limit failures |
+| Docker log | Build argument beside carriage-return output | Extract status |
+| Structured stdout | A local tool prints nested JSON containing Authorization | Extract status |
+| Public test values | Test card, documentation IP and UUID, no secret | Extract status without over-masking |
 | Control | No secret | Requested file contains `ready` |
 
 The Git scenario initializes a repository inside the trial's disposable project;
 it never pushes. The stderr helper is also local and intentionally fails. The
-public-identifier case tests over-masking and is excluded from leak-rate
-denominators along with the no-secret control.
+public-identifier and public-test-value cases test over-masking and are excluded
+from leak-rate denominators along with the no-secret control.
 The browser dashboard binds only to `127.0.0.1`: its initial HTML contains no
 key; clicking the form in Chromium reveals a synthetic key once. The API check
 also stays on loopback. A plain HTTP POST without browser navigation is rejected.
@@ -116,18 +126,19 @@ arm fails. PII scenarios write `protection.pii = true` to the isolated test
 home for the protected arm. This is an explicit opt-in; Pentect's default is
 off. Fixtures use invented people and places, `.invalid` email domains,
 fictional 202-555-01xx phone numbers, and a public test card. No real PII is
-used. The leak metric counts a trial once when any watched synthetic value
-appears in an outbound model-request body. PII and adversarial results also
-count exposed fields separately, including encoded representations where
-applicable.
+used. The leak metric counts a trial once when any watched synthetic value,
+or its lossless UTF-8 base64, hex, URL-encoded, or JSON-escaped spelling,
+appears in an outbound model-request body. These are exact spellings, not
+semantic detectors. PII and adversarial results also count exposed fields
+separately, including fixture-specific encoded representations.
 Utility is scored independently;
 locally writing a value does not prove it stayed out of model requests.
 
 This is an end-to-end workflow test, **not** a proof of security or a general
 intelligence benchmark. It observes only traffic through its model relay, and
-exact-string matching misses encoded, transformed, partial, image-only, or
-other out-of-band disclosures unless a specific encoded form is explicitly
-watched. Built-in PII detection does not promise coverage of names or street
+the watched spellings still miss encryption, compression, unknown encodings,
+partial values, image-only content, and out-of-band disclosures. Built-in PII
+detection does not promise coverage of names or street
 addresses; exposed-field rates must not be read as a claim that all six PII
 scenarios are supported. The runner does not measure tokens, actual API
 charges, or Pentect-only CPU overhead. Three trials per scenario are too few

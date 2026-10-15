@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import base64
+import html
 import json
 from pathlib import Path
 import subprocess
@@ -51,6 +52,12 @@ class AdversarialFixtureTests(unittest.TestCase):
                 self.assertEqual(json.loads(decoded)["secret"], secret)
             elif scenario == "pem_block":
                 self.assertEqual(base64.b64decode(fixture.watched["pem_body"]).decode(), secret)
+            elif scenario == "html_entities":
+                self.assertIn(fixture.watched["html_entities"], fixture.contents)
+                self.assertEqual(html.unescape(fixture.watched["html_entities"]), secret)
+            elif scenario == "unicode_escaped_json":
+                self.assertIn(fixture.watched["unicode_escapes"], fixture.contents)
+                self.assertEqual(json.loads(fixture.contents)["token"], secret)
             else:
                 for label, value in fixture.watched.items():
                     with self.subTest(scenario=scenario, label=label):

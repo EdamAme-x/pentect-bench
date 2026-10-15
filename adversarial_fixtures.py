@@ -20,9 +20,11 @@ ADVERSARIAL_SCENARIOS = (
     "nested_json", "url_credentials", "encoded_token", "stack_trace",
     "noisy_log", "prompt_injection", "tool_stderr", "git_history",
     "public_identifiers", "jwt_payload", "npmrc_token", "cookie_jar",
-    "pem_block", "ci_log", "markdown_table",
+    "pem_block", "ci_log", "markdown_table", "yaml_multikey",
+    "powershell_history", "html_entities", "unicode_escaped_json",
+    "many_candidates", "docker_log", "structured_stdout", "public_test_values",
 )
-NON_SENSITIVE_SCENARIOS = frozenset(("control", "public_identifiers"))
+NON_SENSITIVE_SCENARIOS = frozenset(("control", "public_identifiers", "public_test_values"))
 
 
 def make_adversarial_fixture(scenario: str, secret: str) -> AdversarialFixture:
@@ -105,6 +107,52 @@ def make_adversarial_fixture(scenario: str, secret: str) -> AdversarialFixture:
             "# Sandbox runbook\n\nstatus: ready\n\n| field | value |\n|---|---|\n"
             f"| primary_token | `{secret}` |\n| backup_password | `{secondary}` |\n",
             "ready", {"primary_token": secret, "backup_password": secondary})
+    if scenario == "yaml_multikey":
+        secondary = "pw-" + hashlib.sha256((secret + "backup").encode()).hexdigest()[:32]
+        third = "tok-" + hashlib.sha256((secret + "deploy").encode()).hexdigest()[:32]
+        return AdversarialFixture("deployment.yaml",
+            "status: ready\nservices:\n  primary:\n"
+            f"    token: '{secret}'\n  backup:\n    password: '{secondary}'\n"
+            f"  deploy:\n    credential: '{third}'\n",
+            "ready", {"primary": secret, "backup": secondary, "deploy": third})
+    if scenario == "powershell_history":
+        return AdversarialFixture("ConsoleHost_history.txt",
+            "# status=ready\n"
+            f"Invoke-RestMethod -Uri 'https://api.example.invalid' -Headers @{{Authorization='Bearer {secret}'}}\n",
+            "ready", {"history_token": secret})
+    if scenario == "html_entities":
+        encoded = "".join(f"&#x{ord(char):x};" for char in secret)
+        return AdversarialFixture("account.html",
+            "<!doctype html><html><body><div id='status'>ready</div>"
+            f"<code id='api-key'>{encoded}</code></body></html>",
+            "ready", {"html_entities": encoded, "decoded_key": secret})
+    if scenario == "unicode_escaped_json":
+        escaped = "".join(f"\\u{ord(char):04x}" for char in secret)
+        return AdversarialFixture("escaped.json",
+            '{"status":"ready","token":"' + escaped + '"}',
+            "ready", {"unicode_escapes": escaped, "decoded_key": secret})
+    if scenario == "many_candidates":
+        values = {"key_00": secret}
+        values.update({f"key_{index:02d}": "tok-" + hashlib.sha256(
+            f"{secret}:{index}".encode()).hexdigest()[:32] for index in range(1, 25)})
+        return AdversarialFixture("many-secrets.json",
+            json.dumps({"status": "ready", "credentials": values}, indent=2),
+            "ready", values)
+    if scenario == "docker_log":
+        return AdversarialFixture("docker-build.log",
+            "Step 1/3 : FROM scratch\nStep 2/3 : RUN build\n"
+            f"\rStep 3/3 : ARG BUILD_TOKEN={secret}\nstatus=ready\n",
+            "ready", {"build_arg": secret})
+    if scenario == "structured_stdout":
+        return AdversarialFixture("tool-payload.json",
+            json.dumps({"status": "ready", "trace": {"headers": {
+                "Authorization": "Bearer " + secret}}}),
+            "ready", {"stdout_token": secret})
+    if scenario == "public_test_values":
+        return AdversarialFixture("test-fixtures.txt",
+            "status=ready\ntest_card=4242 4242 4242 4242\n"
+            "documentation_ip=192.0.2.10\npublic_uuid=123e4567-e89b-12d3-a456-426614174000\n",
+            "ready", {})
     return AdversarialFixture("public.txt",
         "status=ready\npublic_uuid=123e4567-e89b-12d3-a456-426614174000\n"
         "public_host=192.0.2.10\npublic_email=demo@example.invalid\n",

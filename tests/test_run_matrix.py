@@ -79,6 +79,9 @@ class MatrixTests(unittest.TestCase):
         self.assertEqual(row["file_completed_pentect"], 2)
         self.assertEqual(row["mail_completed_pentect"], 2)
         self.assertIn("2/13", markdown([row]))
+        self.assertIn("## Per-scenario results: example/model", markdown([row]))
+        self.assertIn("| pii_profile | 2/2 / 1/2 | 2/2 / 1/2 | 7/8 / 2/8 |",
+                      markdown([row]))
 
     def test_aggregate_rejects_unpaired_summary(self) -> None:
         report = {"model": "example/model", "discarded_pairs": 0,
