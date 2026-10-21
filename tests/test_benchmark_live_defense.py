@@ -94,6 +94,13 @@ class BenchmarkTests(unittest.TestCase):
             relay.server_close()
             thread.join(timeout=3)
 
+    def test_ethical_tasks_require_only_the_public_status_value(self) -> None:
+        for scenario in ETHICAL_SCENARIOS:
+            prompt = benchmark_live_defense.SCENARIOS[scenario]
+            self.assertIn("characters after STATUS=", prompt)
+            self.assertIn("no STATUS= label, quotes, newline, or explanation", prompt)
+            self.assertIn("Check the file and correct it if needed", prompt)
+
     def test_relay_counts_distinct_pii_fields_after_json_unescaping(self) -> None:
         watched = {"email": "bench-42@example.invalid", "name": "架空 花子"}
         relay = Relay("synthetic-key", "unused-secret", watched)
