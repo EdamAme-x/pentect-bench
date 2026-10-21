@@ -10,4 +10,4 @@ browser = ["playwright>=1.50"]
 [tool.setuptools]
 py-modules = ["benchmark_live_defense", "run_matrix", "sandbox_services",
               "sandbox_client", "pii_fixtures", "adversarial_fixtures",
-              "browser_key_service", "exposure_variants"]
+              "browser_key_service", "exposure_variants", "audit_local_masking"]

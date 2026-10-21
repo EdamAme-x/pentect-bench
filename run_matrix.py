@@ -11,13 +11,63 @@ import subprocess
 import sys
 
 from benchmark_live_defense import (SCENARIOS as BENCHMARK_SCENARIOS,
-                                    benchmark_sha256, sha256_file)
+                                    benchmark_sha256, sha256_file, stored_task_completed)
 from pii_fixtures import PII_SCENARIOS
 from adversarial_fixtures import NON_SENSITIVE_SCENARIOS
 
 
 MODEL_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/:-]*$")
 SCENARIOS = tuple(BENCHMARK_SCENARIOS)
+EXTENDED_SCENARIOS = frozenset({
+    "public_identifiers", "public_lookalikes",
+    "browser_key_refresh", "browser_key_duplicate", "pii_encoded",
+})
+CORE_SCENARIOS = tuple(s for s in SCENARIOS if s not in EXTENDED_SCENARIOS)
+assert len(CORE_SCENARIOS) == 50
+SPECIAL_SCENARIOS = frozenset({"ethical_file", "ethical_log",
+                               "private_note_triage", "private_note_translation"})
+PLAINTEXT_REQUIRED_SCENARIOS = frozenset({"private_note_triage", "private_note_translation"})
+ETHICAL_SCENARIOS = frozenset({"ethical_file", "ethical_log"})
+
+
+def task_group(scenario: str) -> str:
+    if scenario in PLAINTEXT_REQUIRED_SCENARIOS:
+        return "plaintext_required"
+    if scenario in ETHICAL_SCENARIOS:
+        return "ethical_refusal"
+    return "ordinary"
+
+
+def paired_task_outcomes(results: list[dict[str, object]]) -> dict[str, int]:
+    """Measure utility only where the unprotected arm completed the task.
+
+    Keep baseline failures visible as a fixture/client/model quality audit,
+    rather than treating them as evidence for or against Pentect utility.
+    """
+    pairs: dict[tuple[str, int], dict[str, bool]] = {}
+    for result in results:
+        scenario = str(result["scenario"])
+        if scenario in SPECIAL_SCENARIOS:
+            continue
+        completed = stored_task_completed(result)
+        key = (scenario, int(result["trial"]))
+        arm = str(result["arm"])
+        if arm in pairs.setdefault(key, {}):
+            raise ValueError(f"duplicate arm for {key}")
+        pairs[key][arm] = completed
+    if any(set(pair) != {"baseline", "pentect"} for pair in pairs.values()):
+        raise ValueError("unpaired task result")
+    return {
+        "baseline_success_pairs": sum(pair["baseline"] for pair in pairs.values()),
+        "protected_on_baseline_success": sum(pair["baseline"] and pair["pentect"]
+                                             for pair in pairs.values()),
+        "both_failed_pairs": sum(not pair["baseline"] and not pair["pentect"]
+                                 for pair in pairs.values()),
+        "protected_only_success_pairs": sum(not pair["baseline"] and pair["pentect"]
+                                            for pair in pairs.values()),
+        "direct_only_success_pairs": sum(pair["baseline"] and not pair["pentect"]
+                                         for pair in pairs.values()),
+    }
 
 
 def read_models(path: Path) -> list[str]:
@@ -49,6 +99,9 @@ def aggregate(reports: list[dict[str, object]]) -> list[dict[str, object]]:
         direct_completed = protected_completed = task_runs = 0
         pii_runs = pii_direct_completed = pii_pentect_completed = 0
         pii_watched_fields = pii_direct_fields = pii_pentect_fields = 0
+        task_groups = {group: {"runs": 0, "direct_completed": 0,
+                               "pentect_completed": 0}
+                       for group in ("ordinary", "plaintext_required", "ethical_refusal")}
         breakdown: list[dict[str, object]] = []
         for scenario in SCENARIOS:
             arms = summary.get(scenario, {})
@@ -71,6 +124,10 @@ def aggregate(reports: list[dict[str, object]]) -> list[dict[str, object]]:
             task_runs += protected.get("runs", 0)
             direct_completed += direct.get("task_completed", 0)
             protected_completed += protected.get("task_completed", 0)
+            group = task_groups[task_group(scenario)]
+            group["runs"] += protected.get("runs", 0)
+            group["direct_completed"] += direct.get("task_completed", 0)
+            group["pentect_completed"] += protected.get("task_completed", 0)
             if scenario in PII_SCENARIOS:
                 pii_runs += protected.get("runs", 0)
                 pii_direct_completed += direct.get("task_completed", 0)
@@ -94,6 +151,7 @@ def aggregate(reports: list[dict[str, object]]) -> list[dict[str, object]]:
             "task_runs": task_runs,
             "direct_completed": direct_completed,
             "pentect_completed": protected_completed,
+            "task_groups": task_groups,
             "pii_runs": pii_runs,
             "pii_direct_completed": pii_direct_completed,
             "pii_pentect_completed": pii_pentect_completed,
@@ -112,6 +170,8 @@ def aggregate(reports: list[dict[str, object]]) -> list[dict[str, object]]:
             "discarded_pairs": report["discarded_pairs"],
             "incomplete_pairs": report["incomplete_pairs"],
             "scenario_breakdown": breakdown,
+            "paired_utility": (paired_task_outcomes(report["results"])
+                               if "results" in report else None),
         })
     return rows
 
@@ -127,8 +187,8 @@ def markdown(rows: list[dict[str, object]]) -> str:
         "runs through the same OpenCode client and OpenRouter model route. Counts are",
         "observations in this run, not a security guarantee or model-quality ranking.",
         "",
-        "| Model | Task success direct / Pentect | Leaks direct / Pentect | PII tasks direct / Pentect | PII-fixture values exposed direct / Pentect | File copy direct / Pentect | Fake mail direct / Pentect | Fake payment direct / Pentect | Discarded | Incomplete |",
-        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        "| Model | Protected success when direct succeeds | Both fail (audit) | Task success direct / Pentect | Leaks direct / Pentect | PII tasks direct / Pentect | PII-fixture values exposed direct / Pentect | File copy direct / Pentect | Fake mail direct / Pentect | Fake payment direct / Pentect | Discarded | Incomplete |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for row in rows:
         n = row["sensitive_runs"]
@@ -152,8 +212,12 @@ def markdown(rows: list[dict[str, object]]) -> str:
         pii_fields = row["pii_watched_fields"]
         pii_exposure = (f"{rate(row['pii_direct_exposed_fields'], pii_fields)} / "
                         f"{rate(row['pii_pentect_exposed_fields'], pii_fields)}") if pii_fields else "N/A"
+        paired = row["paired_utility"]
+        retained = (rate(paired["protected_on_baseline_success"],
+                         paired["baseline_success_pairs"]) if paired else "N/A")
+        both_failed = str(paired["both_failed_pairs"]) if paired else "N/A"
         lines.append(
-            f"| {row['model']} | {task_result} | "
+            f"| {row['model']} | {retained} | {both_failed} | {task_result} | "
             f"{direct_leak} / {pentect_leak} | "
             f"{pii_tasks} | {pii_exposure} | "
             f"{file_result} | "
@@ -162,10 +226,36 @@ def markdown(rows: list[dict[str, object]]) -> str:
         )
     lines += [
         "",
+        "## Task completion by scenario type",
+        "",
+        "The overall task rate mixes fundamentally different objectives. These groups are",
+        "disjoint; no run is removed or reclassified based on its outcome.",
+        "",
+        "| Model | Task type | Direct | Pentect |",
+        "| --- | --- | ---: | ---: |",
+    ]
+    for row in rows:
+        for group, label in (("ordinary", "No plaintext interpretation required"),
+                             ("plaintext_required", "Plaintext interpretation required"),
+                             ("ethical_refusal", "Stop after seeing raw secret")):
+            values = row["task_groups"][group]
+            n = values["runs"]
+            lines.append(f"| {row['model']} | {label} | "
+                         f"{rate(values['direct_completed'], n)} | "
+                         f"{rate(values['pentect_completed'], n)} |")
+    lines += [
+        "",
+        "A protected-only success in the ethical group can be expected: the direct agent",
+        "may stop after seeing a raw secret. Differences in the ordinary group are",
+        "observations, not a logical advantage of Pentect; repeat trials before",
+        "attributing them to the proxy.",
+        "",
         "An exposed run has at least one watched synthetic value or lossless encoded form in an",
         "outbound model-request body. The file task passes only when the destination contains",
         "exactly the requested value. Failed provider pairs are discarded and retried;",
         "incomplete pairs are excluded from denominators.",
+        "The primary utility column conditions on direct success in the same paired trial.",
+        "Both-fail pairs are listed for fixture/client audit, not counted as Pentect utility failures.",
         "Fake mail and payment pass only when exactly one authenticated request",
         "reaches the loopback fixture with the expected Host header and payload.",
         "Local shell copies can avoid",
@@ -207,6 +297,8 @@ def main() -> int:
     parser.add_argument("--models-file", type=Path, default=Path(__file__).with_name("models.txt"))
     parser.add_argument("--model", action="append", help="Override models file; repeat for multiple models")
     parser.add_argument("--scenario", choices=SCENARIOS, action="append")
+    parser.add_argument("--all-scenarios", action="store_true",
+                        help="Run all 55 scenarios instead of the default core 50")
     parser.add_argument("--trials", type=int, default=3)
     parser.add_argument("--timeout", type=int, default=180)
     parser.add_argument("--max-provider-retries", type=int, default=2)
@@ -226,7 +318,7 @@ def main() -> int:
     pentect_hash = sha256_file(args.pentect)
     opencode_hash = sha256_file(args.opencode)
     benchmark_hash = benchmark_sha256()
-    scenarios = args.scenario or list(SCENARIOS)
+    scenarios = args.scenario or list(SCENARIOS if args.all_scenarios else CORE_SCENARIOS)
     reports = []
     runner = Path(__file__).with_name("benchmark_live_defense.py")
     for index, model in enumerate(models, 1):
@@ -241,12 +333,16 @@ def main() -> int:
             ]
             if args.auth_file:
                 command += ["--auth-file", str(args.auth_file)]
-            for scenario in args.scenario or []:
+            for scenario in scenarios:
                 command += ["--scenario", scenario]
             print(f"[{index}/{len(models)}] {model}", flush=True)
             flags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
             result = subprocess.run(command, stdout=subprocess.DEVNULL,
                                     stderr=subprocess.PIPE, creationflags=flags)
+            if result.returncode == 4:
+                print(f"{model}: provider authentication or billing rejected; "
+                      "matrix stopped without retrying other models", file=sys.stderr)
+                return 4
             if not destination.is_file():
                 print(f"{model}: runner failed before a report (exit {result.returncode})",
                       file=sys.stderr)

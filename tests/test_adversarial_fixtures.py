@@ -4,6 +4,7 @@ from __future__ import annotations
 import base64
 from contextlib import closing
 import gzip
+import hashlib
 import html
 import json
 import sqlite3
@@ -22,6 +23,17 @@ from benchmark_live_defense import SCENARIOS, prepare_git_diff, prepare_git_hist
 
 
 class AdversarialFixtureTests(unittest.TestCase):
+    def test_plaintext_required_tasks_hide_the_only_answer_bearing_text(self) -> None:
+        for scenario in ("private_note_triage", "private_note_translation"):
+            with self.subTest(scenario=scenario):
+                fixtures = [make_adversarial_fixture(scenario, f"sk-seed-{i}")
+                            for i in range(32)]
+                self.assertGreater(len({fixture.expected for fixture in fixtures}), 1)
+                for fixture in fixtures:
+                    note = fixture.watched["private_note"]
+                    self.assertIn(f"mask({note})", fixture.contents)
+                    self.assertNotIn(fixture.expected, fixture.contents)
+
     def test_each_fixture_has_a_prompt_and_answer(self) -> None:
         for scenario in ADVERSARIAL_SCENARIOS:
             with self.subTest(scenario=scenario):
@@ -55,7 +67,9 @@ class AdversarialFixtureTests(unittest.TestCase):
                 decoded = base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4))
                 self.assertEqual(json.loads(decoded)["secret"], secret)
             elif scenario == "pem_block":
-                self.assertEqual(base64.b64decode(fixture.watched["pem_body"]).decode(), secret)
+                der = base64.b64decode(fixture.watched["pem_body"])
+                self.assertEqual(der[:16], bytes.fromhex("302e020100300506032b657004220420"))
+                self.assertEqual(der[16:], hashlib.sha256(secret.encode()).digest())
             elif scenario == "html_entities":
                 self.assertIn(fixture.watched["html_entities"], fixture.contents)
                 self.assertEqual(html.unescape(fixture.watched["html_entities"]), secret)
