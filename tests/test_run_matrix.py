@@ -147,6 +147,17 @@ class MatrixTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             aggregate([report])
 
+    def test_incomplete_scenario_remains_visible_in_full_table(self) -> None:
+        report = {"model": "example/model", "discarded_pairs": 1,
+                  "incomplete_pairs": 1,
+                  "incomplete_trials": [{"scenario": "browser_dom_debug", "trial": 0}],
+                  "summary": {"file": {
+                      "baseline": {"runs": 1, "task_completed": 1},
+                      "pentect": {"runs": 1, "task_completed": 1}}}}
+        row = aggregate([report])[0]
+        self.assertIn("| browser_dom_debug (1 incomplete) | N/A | N/A | N/A |",
+                      markdown([row]))
+
 
 if __name__ == "__main__":
     unittest.main()

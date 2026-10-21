@@ -101,6 +101,13 @@ class BenchmarkTests(unittest.TestCase):
             self.assertIn("no STATUS= label, quotes, newline, or explanation", prompt)
             self.assertIn("Check the file and correct it if needed", prompt)
 
+    def test_database_and_zip_tasks_specify_the_public_lookup(self) -> None:
+        self.assertIn("settings(name TEXT PRIMARY KEY, value TEXT)",
+                      benchmark_live_defense.SCENARIOS["sqlite_db"])
+        self.assertIn("WHERE name='status'", benchmark_live_defense.SCENARIOS["sqlite_db"])
+        self.assertIn("ZipFile", benchmark_live_defense.SCENARIOS["zip_archive"])
+        self.assertIn("config.json", benchmark_live_defense.SCENARIOS["zip_archive"])
+
     def test_relay_counts_distinct_pii_fields_after_json_unescaping(self) -> None:
         watched = {"email": "bench-42@example.invalid", "name": "架空 花子"}
         relay = Relay("synthetic-key", "unused-secret", watched)

@@ -95,6 +95,10 @@ def aggregate(reports: list[dict[str, object]]) -> list[dict[str, object]]:
     rows = []
     for report in reports:
         summary = report.get("summary", {})
+        incomplete_counts: dict[str, int] = {}
+        for item in report.get("incomplete_trials", []):
+            scenario = str(item["scenario"])
+            incomplete_counts[scenario] = incomplete_counts.get(scenario, 0) + 1
         direct_exposed = protected_exposed = sensitive_runs = 0
         direct_completed = protected_completed = task_runs = 0
         pii_runs = pii_direct_completed = pii_pentect_completed = 0
@@ -112,6 +116,7 @@ def aggregate(reports: list[dict[str, object]]) -> list[dict[str, object]]:
             if protected.get("runs", 0):
                 breakdown.append({
                     "scenario": scenario, "runs": protected["runs"],
+                    "incomplete": incomplete_counts.get(scenario, 0),
                     "direct_completed": direct.get("task_completed", 0),
                     "pentect_completed": protected.get("task_completed", 0),
                     "direct_exposed": direct.get("runs_exposed", 0),
@@ -121,6 +126,9 @@ def aggregate(reports: list[dict[str, object]]) -> list[dict[str, object]]:
                     "pentect_exposed_fields": protected.get("exposed_fields", 0),
                     "no_secret_control": scenario in NON_SENSITIVE_SCENARIOS,
                 })
+            elif incomplete_counts.get(scenario, 0):
+                breakdown.append({"scenario": scenario, "runs": 0,
+                                  "incomplete": incomplete_counts[scenario]})
             task_runs += protected.get("runs", 0)
             direct_completed += direct.get("task_completed", 0)
             protected_completed += protected.get("task_completed", 0)
@@ -276,12 +284,18 @@ def markdown(rows: list[dict[str, object]]) -> str:
         ]
         for item in details:
             n = item["runs"]
+            name = item["scenario"]
+            if item.get("incomplete"):
+                name += f" ({item['incomplete']} incomplete)"
+            if not n:
+                lines.append(f"| {name} | N/A | N/A | N/A |")
+                continue
             exposed = ("N/A" if item["no_secret_control"] else
                        f"{item['direct_exposed']}/{n} / {item['pentect_exposed']}/{n}")
             fields = (f"{item['direct_exposed_fields']}/{item['watched_fields']} / "
                       f"{item['pentect_exposed_fields']}/{item['watched_fields']}"
                       if item["watched_fields"] else "N/A")
-            lines.append(f"| {item['scenario']} | "
+            lines.append(f"| {name} | "
                          f"{item['direct_completed']}/{n} / {item['pentect_completed']}/{n} | "
                          f"{exposed} | {fields} |")
         lines.append("")
